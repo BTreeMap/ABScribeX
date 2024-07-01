@@ -49,9 +49,11 @@
     console.log(target.textContent)
     setInterval(() => {
         const htmlString = target.innerHTML
-        const htmlWithLineBreaks = htmlString.replace(/<br*?>/g, '\n')
+        const htmlWithLineBreaks = htmlString.replace(/<br*?>/g, '\r\n').replace(/<\/p>/g, '</p>\r\n')
         const div = document.createElement('div')
         div.innerHTML = htmlWithLineBreaks
+        console.log(div)
+        console.log(div.textContent)
         sync(div.textContent, key)
     }, 500)
 })()
