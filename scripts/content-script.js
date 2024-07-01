@@ -1,6 +1,7 @@
-// Content Script (inject this into your online editor page)
-
 (() => {
+    const secret = '8ac934c3-01a4-771b-c585-c8a98c00ab3a'
+    const tag = 'fd3611f1-f8d5-2162-ea41-95d49150119b'
+
     const trigger = (keyword) => {
         const buttons = document.querySelectorAll('button')
         for (const button of buttons) {
@@ -11,13 +12,23 @@
         }
     }
 
+    const sync = (text) => {
+        chrome.runtime.sendMessage({
+            message: tag + JSON.stringify({
+                'text': text
+            })
+        }, (response) => {
+            console.log("Received response from ServiceWorker: ", response.message);
+        })
+    }
+
     const url = new URL(location.href)
 
-    if (url.searchParams.get('secret') === '8ac934c3-01a4-771b-c585-c8a98c00ab3a') {
+    if (url.searchParams.get('secret') === secret) {
         trigger('try')
         chrome.runtime.onMessage.addListener(
             function (request, sender, sendResponse) {
-                if (request.message === "Hello from ServiceWorker") {
+                if (request.message.startsWith(tag)) {
                     console.log("Received message from ServiceWorker: ", request.message);
                     // Handle the message or send a response
                     sendResponse({ message: "Hi, ServiceWorker!" });
@@ -25,10 +36,7 @@
             }
         );
 
-        // Send a message to the ServiceWorker
-        chrome.runtime.sendMessage({ message: "Hello from Content Script" }, function (response) {
-            console.log("Received response from ServiceWorker: ", response.message);
-        });
+        ;
     }
 
 })()
