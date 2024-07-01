@@ -16,10 +16,10 @@
         }
     }
 
-    const sync = (text, key) => {
+    const sync = (content, key) => {
         chrome.runtime.sendMessage({
             message: Tag + JSON.stringify({
-                text,
+                content,
                 key
             })
         }, (response) => {
@@ -48,13 +48,7 @@
     target.textContent = url.searchParams.get('text') || ''
     console.log(target.textContent)
     setInterval(() => {
-        const htmlString = target.innerHTML
-        const htmlWithLineBreaks = htmlString.replace(/<br*?>/g, '\r\n').replace(/<\/p>/g, '</p>\r\n')
-        const div = document.createElement('div')
-        div.innerHTML = htmlWithLineBreaks
-        console.log(div)
-        console.log(div.textContent)
-        sync(div.textContent, key)
+        sync(target.innerHTML, key)
     }, 500)
 })()
 

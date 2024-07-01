@@ -59,11 +59,18 @@
         }
     });
 
+    const textOnly = (html) => {
+        const htmlWithLineBreaks = html.replace(/<br*?>/g, '\r\n').replace(/<\/p>/g, '</p>\r\n')
+        const div = document.createElement('div')
+        div.innerHTML = htmlWithLineBreaks
+        return div.textContent
+    }
+
     chrome.runtime.onMessage.addListener(
         function (request, sender, sendResponse) {
             if (request.message && request.message.startsWith(Tag)) {
-                const { text, key } = JSON.parse(request.message.substring(Tag.length))
-                console.log("Received message from Content Script: ", text, key);
+                const { content, key } = JSON.parse(request.message.substring(Tag.length))
+                console.log("Received message from Content Script: ");
                 const value = mapTab.get(key)
                 if (value) {
                     const { tab, id } = value
@@ -71,11 +78,15 @@
                     chrome.scripting.executeScript(
                         {
                             target: { tabId: tab },
-                            args: [text, id],
-                            func: (text, id) => {
+                            args: [content, id],
+                            func: (content, id) => {
                                 const elem = document.querySelector(`#${id}`)
                                 if (elem) {
-                                    elem.textContent = text
+                                    if (elem.tagName.toLowerCase() === 'textarea') {
+                                        elem.textContent = textOnly(content)
+                                    } else {
+                                        elem.innerHTML = content
+                                    }
                                 }
                             }
                         },
