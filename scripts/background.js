@@ -46,10 +46,15 @@
                 target: lastClickedElement,
             })
 
+            let content = lastClickedElement.innerHTML
+            if (lastClickedElement.tagName.toLowerCase() === 'textarea') {
+                content = content.replaceAll('\n', '<br/>')
+            }
+
             const url = new URL('https://abtestingtools-frontend.up.railway.app/')
             url.searchParams.set('secret', Secret)
             url.searchParams.set('key', key)
-            url.searchParams.set('content', btoa(lastClickedElement.innerHTML || ''))
+            url.searchParams.set('content', btoa(content || ''))
 
             chrome.windows.create({
                 url: url.href,
