@@ -48,7 +48,7 @@
             const url = new URL('https://abtestingtools-frontend.up.railway.app/')
             url.searchParams.set('secret', Secret)
             url.searchParams.set('key', key)
-            url.searchParams.set('text', lastClickedElement.textContent || '')
+            url.searchParams.set('content', lastClickedElement.innerHTML || '')
 
             chrome.windows.create({
                 url: url.href,
