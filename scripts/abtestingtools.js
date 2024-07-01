@@ -38,7 +38,7 @@
     while (!target) {
         const iframe = document.querySelector('iframe')
         console.log(iframe)
-        if (iframe.id && iframe.id.startsWith('tiny')) {
+        if (iframe !== null && iframe.id && iframe.id.startsWith('tiny')) {
             try {
                 target = iframe.contentWindow.document.querySelector('#tinymce')
             } catch { }
@@ -48,7 +48,11 @@
     target.textContent = url.searchParams.get('text') || ''
     console.log(target.textContent)
     setInterval(() => {
-        sync(target.innerHTML, key)
+        const htmlString = target.innerHTML
+        const htmlWithLineBreaks = htmlString.replace(/<br*?>/g, '\n')
+        const div = document.createElement('div')
+        div.innerHTML = htmlWithLineBreaks
+        sync(div.textContent, key)
     }, 500)
 })()
 

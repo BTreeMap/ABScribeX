@@ -75,7 +75,7 @@
                             func: (text, id) => {
                                 const elem = document.querySelector(`#${id}`)
                                 if (elem) {
-                                    elem.innerHTML = text
+                                    elem.textContent = text
                                 }
                             }
                         },
