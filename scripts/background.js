@@ -9,7 +9,9 @@
     // Listen for messages from the content script
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === ActionClickedElement) {
-            lastClickedElement = message.element;
+            console.log('action clicked')
+            console.log(message.element)
+            lastClickedElement = message.element
         }
     });
 
@@ -53,7 +55,7 @@
 
     chrome.runtime.onMessage.addListener(
         function (request, sender, sendResponse) {
-            if (request.message.startsWith(Tag)) {
+            if (request.message && request.message.startsWith(Tag)) {
                 const { text, key } = JSON.parse(request.message.substring(Tag.length))
                 console.log("Received message from Content Script: ", text, key);
                 // Handle the message or send a response
