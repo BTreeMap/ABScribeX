@@ -9,8 +9,6 @@
     // Listen for messages from the content script
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === ActionClickedElement) {
-            console.log('action clicked')
-            console.log(message.element)
             lastClickedElement = message.element
         }
     });
@@ -42,10 +40,18 @@
             console.log(tab)
             console.log(info)
             const key = generateRandomHexString()
-            mapTab.set(key, lastClickedElement.reference)
+            mapTab.set(key, {
+                tab: tab.id,
+                id: lastClickedElement.id
+            })
+
+            const url = new URL('https://abtestingtools-frontend.up.railway.app/')
+            url.searchParams.set('secret', Secret)
+            url.searchParams.set('key', key)
+            url.searchParams.set('text', lastClickedElement.textContent || '')
 
             chrome.windows.create({
-                url: `https://abtestingtools-frontend.up.railway.app/?secret=${Secret}&key=${key}`,
+                url: url.href,
                 type: 'popup',
                 width: 400,
                 height: 600
@@ -58,11 +64,27 @@
             if (request.message && request.message.startsWith(Tag)) {
                 const { text, key } = JSON.parse(request.message.substring(Tag.length))
                 console.log("Received message from Content Script: ", text, key);
-                // Handle the message or send a response
-                sendResponse({ message: "Hello from ServiceWorker" });
-                const elem = mapTab.get(key)
-                if (elem) {
-                    elem.textContent = text
+                const value = mapTab.get(key)
+                if (value) {
+                    const { tab, id } = value
+                    console.log(tab, id)
+                    chrome.scripting.executeScript(
+                        {
+                            target: { tabId: tab },
+                            args: [text, id],
+                            func: (text, id) => {
+                                const elem = document.querySelector(`#${id}`)
+                                if (elem) {
+                                    elem.textContent = text
+                                }
+                            }
+                        },
+                        (results) => {
+                            // Callback after script has been injected
+                            console.log("Content modified");
+                            console.log(results);
+                        }
+                    );
                 }
             }
         }

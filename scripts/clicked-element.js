@@ -13,6 +13,7 @@
                 id: clickedElement.id,
                 classList: clickedElement.classList,
                 innerHTML: clickedElement.innerHTML,
+                textContent: clickedElement.textContent,
                 src: clickedElement.src, // if it's an image or other media
                 href: clickedElement.href, // if it's a link
             }
