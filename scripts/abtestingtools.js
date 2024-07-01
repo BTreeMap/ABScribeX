@@ -45,20 +45,10 @@
         }
         await sleep(500)
     }
-    console.log(target.textContent)
     target.textContent = url.searchParams.get('text') || ''
     console.log(target.textContent)
     setInterval(() => {
-        sync(target.textContent, key)
+        sync(target.innerHTML, key)
     }, 500)
-
-    chrome.runtime.onMessage.addListener(
-        function (request, sender, sendResponse) {
-            if (request.message && request.message.startsWith(Tag)) {
-                const { text, key } = JSON.parse(request.message.substring(Tag.length))
-                console.log("Received message from Content Script: ", text, key);
-            }
-        }
-    )
 })()
 
