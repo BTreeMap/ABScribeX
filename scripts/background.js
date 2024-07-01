@@ -11,17 +11,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "my-extension-edit") {
         console.log(tab)
         console.log(info)
-        const document = await fetch('https://abtestingtools-frontend.up.railway.app/documents', {
-            body: JSON.stringify({ content: '' })
-        })
-        const json = await document.json()
-        const oid = json._id['$oid']
         chrome.windows.create({
-            url: `https://abtestingtools-frontend.up.railway.app/editor#/document/${oid}`,
+            url: 'https://abtestingtools-frontend.up.railway.app/?secret=8ac934c3-01a4-771b-c585-c8a98c00ab3a',
             type: 'popup',
             width: 400,
             height: 600
         });
+
     }
 });
 
