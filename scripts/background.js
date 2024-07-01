@@ -40,15 +40,16 @@
             console.log(tab)
             console.log(info)
             const key = generateRandomHexString()
+            console.log(lastClickedElement)
             mapTab.set(key, {
                 tab: tab.id,
-                id: lastClickedElement.id
+                target: lastClickedElement,
             })
 
             const url = new URL('https://abtestingtools-frontend.up.railway.app/')
             url.searchParams.set('secret', Secret)
             url.searchParams.set('key', key)
-            url.searchParams.set('content', lastClickedElement.innerHTML || '')
+            url.searchParams.set('content', btoa(lastClickedElement.innerHTML || ''))
 
             chrome.windows.create({
                 url: url.href,
@@ -59,12 +60,6 @@
         }
     });
 
-    const textOnly = (html) => {
-        const htmlWithLineBreaks = html.replace(/<br*?>/g, '\r\n').replace(/<\/p>/g, '</p>\r\n')
-        const div = document.createElement('div')
-        div.innerHTML = htmlWithLineBreaks
-        return div.textContent
-    }
 
     chrome.runtime.onMessage.addListener(
         function (request, sender, sendResponse) {
@@ -73,14 +68,22 @@
                 console.log("Received message from Content Script: ");
                 const value = mapTab.get(key)
                 if (value) {
-                    const { tab, id } = value
-                    console.log(tab, id)
+                    const { tab, target } = value
                     chrome.scripting.executeScript(
                         {
                             target: { tabId: tab },
-                            args: [content, id],
-                            func: (content, id) => {
-                                const elem = document.querySelector(`#${id}`)
+                            args: [content, target],
+                            func: (content, target) => {
+                                const textOnly = (html) => {
+                                    const htmlWithLineBreaks = html.replace(/<br*?>/g, '\r\n').replace(/<\/p>/g, '</p>\r\n')
+                                    const div = document.createElement('div')
+                                    div.innerHTML = htmlWithLineBreaks
+                                    return div.textContent
+                                }
+
+                                console.log(target.classId)
+                                const elem = document.querySelector(`.${target.classId}`)
+                                console.log(elem)
                                 if (elem) {
                                     if (elem.tagName.toLowerCase() === 'textarea') {
                                         elem.textContent = textOnly(content)

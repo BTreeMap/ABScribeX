@@ -45,8 +45,7 @@
         }
         await sleep(500)
     }
-    target.textContent = url.searchParams.get('text') || ''
-    console.log(target.textContent)
+    target.innerHTML = atob(url.searchParams.get('content') || '')
     setInterval(() => {
         sync(target.innerHTML, key)
     }, 500)
