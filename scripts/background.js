@@ -17,7 +17,7 @@
     chrome.runtime.onInstalled.addListener(() => {
         chrome.contextMenus.create({
             id: "my-extension-edit",
-            title: "Edit with AI",
+            title: "Edit with ABScribe",
             contexts: ["editable"]
         });
     });
