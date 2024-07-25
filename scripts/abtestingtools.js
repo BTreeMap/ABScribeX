@@ -32,6 +32,28 @@
         return
     }
 
+    const parsedHTML = document.createElement('div')
+    parsedHTML.innerHTML = atob(url.searchParams.get('content') || '')
+
+    const allowlist = new Set(['div', 'p', 'span', 'br'])
+    const isValid = (tagName) => {
+        return allowlist.has(tagName)
+    }
+    /**
+     * @param {Element} node 
+     */
+    const filterNodes = (node) => {
+        const childNodes = Array.from(node.children)
+        for (const child of childNodes) {
+            if (!isValid(child.tagName.toLowerCase())) {
+                node.removeChild(child)
+            } else {
+                filterNodes(child)
+            }
+        }
+    }
+    filterNodes(parsedHTML)
+
     const key = url.searchParams.get('key') || ''
     trigger('try')
     let target = null
@@ -46,6 +68,14 @@
         await sleep(500)
     }
     target.innerHTML = atob(url.searchParams.get('content') || '')
+    const tracker = target.querySelector('div[class="ace-00000000"]')
+    if (!tracker) {
+        const elem = document.createElement('div')
+        elem.hidden = true
+        elem.textContent = JSON.stringify({
+            oid:
+        })
+    }
     setInterval(() => {
         sync(target.innerHTML, key)
     }, 500)
