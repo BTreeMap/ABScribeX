@@ -32,6 +32,7 @@ const create = (elem, identifier) => {
         return
     }
     const p = document.createElement('p')
+    p.classList.add(IdentifierNameV0)
     p.hidden = true
     p.style = 'display: none'
     p.textContent = JSON.stringify(identifier)
