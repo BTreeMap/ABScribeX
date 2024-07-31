@@ -1,9 +1,10 @@
+
 (async () => {
     const ActionClickedElement = '5e997d48-f5c7-b4e5-c1c4-ff004e1930cd'
     const Secret = '8ac934c3-01a4-771b-c585-c8a98c00ab3a'
     const Tag = 'fd3611f1-f8d5-2162-ea41-95d49150119b'
 
-    const identifier = await import('./identifier.js')
+    importScripts('./identifier.js', './tools.js', './libs/dompurify@3.1.6/purify.js');
 
     let lastClickedElement = null
     const mapTab = new Map()
@@ -24,24 +25,12 @@
         });
     });
 
-    function generateRandomHexString() {
-        const byteArray = new Uint8Array(8);
-
-        crypto.getRandomValues(byteArray);
-
-        // Convert each byte to a hex string and concatenate them
-        const hexString = Array.from(byteArray, byte =>
-            byte.toString(16).padStart(2, '0')
-        ).join('');
-
-        return hexString;
-    }
 
     chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         if (info.menuItemId === "my-extension-edit") {
             console.log(tab)
             console.log(info)
-            const key = generateRandomHexString()
+            const key = tools.generateRandomHexString()
             console.log(lastClickedElement)
             mapTab.set(key, {
                 tab: tab.id,
