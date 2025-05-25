@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Quill</title>
+    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css"
+        integrity="sha384-07UbSXbd8HpaOfxZsiO6Y8H1HTX6v0J96b5qP6PKSpYEuSZSYD4GFFHlLRjvjVrL" crossorigin="anonymous">
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #editor-container {
+            width: 80vw;
+            /* 80% of the viewport width */
+            height: 100vh;
+            /* 100% of the viewport height */
+        }
+
+        #editor {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Create the editor container -->
+    <div id="editor-container">
+        <!-- Create the toolbar container -->
+        <div id="toolbar">
+            <button class="ql-bold">Bold</button>
+            <button class="ql-italic">Italic</button>
+            <button class="ql-underline">Underline</button>
+        </div>
+
+        <div id="editor">
+            <p><strong>William Shakespeare</strong> (1564-1616) was an English playwright, poet, and actor. He is widely
+                regarded as
+                the <em>greatest writer</em> in the English language and the world's pre-eminent dramatist.</p>
+            <p>Shakespeare's works include <u>39 plays</u>, 154 sonnets, and two long narrative poems. His plays have
+                been
+                translated into every major living language and are performed more often than those of any other
+                playwright.</p>
+            <p>Some of his most famous works include <strong><em>"Romeo and Juliet," "Hamlet," "Othello," "King
+                        Lear,"</em></strong>
+                and <strong><em>"Macbeth."</em></strong> Shakespeare's influence on the English language and literature
+                is profound
+                and enduring.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"
+        integrity="sha384-0zm5QqnR2gL4GY5AwreU3xp5AEGWqkdbamrRLeXwWwepp4JqmPRawLJFD8Cm802W"
+        crossorigin="anonymous"></script>
+    <script>
+        var quill = new Quill('#editor', {
+            modules: {
+                toolbar: '#toolbar'
+            },
+            theme: 'snow'
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: textarea</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+        integrity="sha384-5KZdSYqynSzIjQGS2M1O3HW6HVDBjfNx0v5Y2eQuE3vvQ9NTiiPK9/GWc0yYCrgw" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f4f7;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .editor-container {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .toolbar a {
+            color: #00796b;
+            font-size: 24px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor-container">
+        <div class="toolbar">
+            <a href="#" title="Bold"><i class="material-icons">format_bold</i></a>
+            <a href="#" title="Italic"><i class="material-icons">format_italic</i></a>
+            <a href="#" title="Underline"><i class="material-icons">format_underlined</i></a>
+        </div>
+        <textarea id="multiset">This is an editable area.</textarea>
+    </div>
+
+    <script>
+        // Here you can add JavaScript code to handle toolbar actions
+    </script>
+</body>
+
+</html>
