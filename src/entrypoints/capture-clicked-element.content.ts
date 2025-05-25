@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify';
 import { Config } from '@/lib/config';
-import { generateRandomHexString } from '@/lib/tools';
+import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
 interface ClickedElementDetails {
     tagName: string;
