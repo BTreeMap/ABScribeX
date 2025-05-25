@@ -3,7 +3,7 @@
     const Secret = '8ac934c3-01a4-771b-c585-c8a98c00ab3a'
     const Tag = 'fd3611f1-f8d5-2162-ea41-95d49150119b'
 
-    importScripts('./identifier.js', './tools.js', './libs/dompurify@3.1.6/purify.js');
+    importScripts('./identifier.js', './tools.js', './libs/dompurify@3.2.6/purify.js');
 
     let lastClickedElement = null
     const mapTab = new Map()
