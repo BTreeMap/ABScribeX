@@ -2,6 +2,8 @@ import DOMPurify from 'dompurify';
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
+import { defineBackground } from 'wxt/utils/define-background';
+
 interface ClickedElementData {
   tagName: string;
   id?: string;

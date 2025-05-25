@@ -13,13 +13,15 @@
       ]
     },
     "types": [
-      "chrome"
+      "chrome",
+      "vitest/globals" // Add vitest/globals for global test types
     ] // Add chrome types explicitly
   },
   "include": [
     "src/**/*.ts",
     "src/entrypoints/**/*.ts",
     "wxt.config.ts",
-    ".wxt/types/globals.d.ts"
+    ".wxt/types/globals.d.ts",
+    "src/**/*.test.ts" // Include test files
   ] // Ensure all relevant files are included
 }

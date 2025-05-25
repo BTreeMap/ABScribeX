@@ -2,6 +2,8 @@ import DOMPurify from 'dompurify';
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
+import { defineContentScript } from 'wxt/utils/define-content-script';
+
 interface ClickedElementDetails {
     tagName: string;
     id?: string;
