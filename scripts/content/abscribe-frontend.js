@@ -27,6 +27,65 @@
         })
     }
 
+    // Steganographic alphabet of invisibles
+    const INVIS = [
+        '\u200B', '\u200C', '\u200D', '\uFEFF',
+        '\u200E', '\u200F',
+        '\u202A', '\u202B', '\u202C', '\u202D', '\u202E',
+        '\u2060', '\u2061', '\u2062', '\u2063', '\u2064',
+        '\u2066', '\u2067', '\u2068', '\u2069',
+        '\u206A', '\u206B', '\u206C', '\u206D', '\u206E', '\u206F'
+    ];
+    const START = '\u2060\u2061';
+    const END = '\u2062\u2063';
+
+    function encode(message) {
+        const bytes = new TextEncoder().encode(message);
+        let num = bytes.reduce((acc, b) => (acc << 8n) + BigInt(b), 0n);
+        const base = BigInt(INVIS.length);
+        const digits = [];
+        while (num > 0n) {
+            digits.push(Number(num % base));
+            num /= base;
+        }
+        if (digits.length === 0) digits.push(0);
+        const payload = digits.reverse().map(d => INVIS[d]).join('');
+        return `${START}${payload}${END}`;
+    }
+
+    function decode(stego) {
+        const [, payload = ''] = stego.split(START);
+        const [invisibles = ''] = payload.split(END);
+        const base = BigInt(INVIS.length);
+        let num = invisibles.split('').reduce((acc, ch) => {
+            const idx = BigInt(INVIS.indexOf(ch));
+            return (acc * base) + idx;
+        }, 0n);
+        const bytes = [];
+        while (num > 0n) {
+            bytes.unshift(Number(num & 0xFFn));
+            num >>= 8n;
+        }
+        return new TextDecoder().decode(new Uint8Array(bytes));
+    }
+
+    function stripStego(html) {
+        const regex = new RegExp(`${START}[\s\S]*?${END}`, 'g');
+        return html.replace(regex, '');
+    }
+
+    function extractStego(html) {
+        const regex = new RegExp(`${START}([\s\S]*?)${END}`);
+        const match = html.match(regex);
+        if (!match) return null;
+        try {
+            const msg = decode(`${START}${match[1]}${END}`);
+            return JSON.parse(msg);
+        } catch {
+            return null;
+        }
+    }
+
     const url = new URL(location.href)
     if (url.searchParams.get('secret') !== Secret) {
         return
@@ -68,20 +127,18 @@
         }
         await sleep(500)
     }
-    // Sanitize HTML string before assigning to innerHTML
-    target.innerHTML = DOMPurify.sanitize(atob(url.searchParams.get('content') || ''))
-    const tracker = target.querySelector('div[class="ace-00000000"]')
-    if (!tracker) {
-        const elem = document.createElement('div')
-        elem.hidden = true
-        elem.textContent = JSON.stringify({
-            oid: '' // Added a placeholder value for oid
-        })
-        target.appendChild(elem) // Appended the new element to the target
-    }
+    // Sanitize HTML string before assigning stego-enhanced content
+    const initialContent = DOMPurify.sanitize(atob(url.searchParams.get('content') || ''));
+    const initialData = { oid: '' };
+    target.innerHTML = initialContent + encode(JSON.stringify(initialData));
+
     setInterval(() => {
-        // Sanitize HTML string before sending
-        sync(DOMPurify.sanitize(target.innerHTML), key)
+        // Extract and preserve stego data on each sync
+        const current = target.innerHTML;
+        const base = stripStego(current);
+        const data = extractStego(current) || { oid: '' };
+        const sanitized = DOMPurify.sanitize(base);
+        sync(sanitized + encode(JSON.stringify(data)), key);
     }, 500)
-})()
+})();
 
