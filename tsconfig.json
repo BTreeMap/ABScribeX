@@ -2,6 +2,24 @@
   "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
     "allowImportingTsExtensions": true,
-    "jsx": "react-jsx"
-  }
+    "jsx": "react-jsx",
+    "baseUrl": ".", // Ensure baseUrl is set for path mapping if used
+    "paths": {
+      "~": [
+        "src/*"
+      ],
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "types": [
+      "chrome"
+    ] // Add chrome types explicitly
+  },
+  "include": [
+    "src/**/*.ts",
+    "entrypoints/**/*.ts",
+    "wxt.config.ts",
+    ".wxt/types/globals.d.ts"
+  ] // Ensure all relevant files are included
 }
