@@ -33,7 +33,8 @@
                 parentId: namedElement.id,
                 classId,
                 classList: clickedElement.classList,
-                innerHTML: clickedElement.innerHTML,
+                // Sanitize innerHTML before sending
+                innerHTML: DOMPurify.sanitize(clickedElement.innerHTML),
                 textContent: clickedElement.textContent,
                 src: clickedElement.src, // if it's an image or other media
                 href: clickedElement.href, // if it's a link

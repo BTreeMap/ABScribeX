@@ -33,7 +33,8 @@
     }
 
     const parsedHTML = document.createElement('div')
-    parsedHTML.innerHTML = atob(url.searchParams.get('content') || '')
+    // Sanitize HTML string before assigning to innerHTML
+    parsedHTML.innerHTML = DOMPurify.sanitize(atob(url.searchParams.get('content') || ''))
 
     const allowlist = new Set(['div', 'p', 'span', 'br'])
     const isValid = (tagName) => {
@@ -67,17 +68,20 @@
         }
         await sleep(500)
     }
-    target.innerHTML = atob(url.searchParams.get('content') || '')
+    // Sanitize HTML string before assigning to innerHTML
+    target.innerHTML = DOMPurify.sanitize(atob(url.searchParams.get('content') || ''))
     const tracker = target.querySelector('div[class="ace-00000000"]')
     if (!tracker) {
         const elem = document.createElement('div')
         elem.hidden = true
         elem.textContent = JSON.stringify({
-            oid:
+            oid: '' // Added a placeholder value for oid
         })
+        target.appendChild(elem) // Appended the new element to the target
     }
     setInterval(() => {
-        sync(target.innerHTML, key)
+        // Sanitize HTML string before sending
+        sync(DOMPurify.sanitize(target.innerHTML), key)
     }, 500)
 })()
 

@@ -1,4 +1,3 @@
-
 (async () => {
     const ActionClickedElement = '5e997d48-f5c7-b4e5-c1c4-ff004e1930cd'
     const Secret = '8ac934c3-01a4-771b-c585-c8a98c00ab3a'
@@ -16,6 +15,10 @@
         }
     });
 
+    // Sanitize HTML content using DOMPurify
+    const sanitizeHTML = (html) => {
+        return DOMPurify.sanitize(html);
+    };
 
     chrome.runtime.onInstalled.addListener(() => {
         chrome.contextMenus.create({
@@ -24,7 +27,6 @@
             contexts: ["editable"]
         });
     });
-
 
     chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         if (info.menuItemId === "my-extension-edit") {
@@ -41,11 +43,13 @@
             if (lastClickedElement.tagName.toLowerCase() === 'textarea') {
                 content = content.replaceAll('\n', '<br/>')
             }
+            // Sanitize content before sending
+            const sanitizedContent = sanitizeHTML(content);
 
             const url = new URL('https://abtestingtools-frontend.up.railway.app/')
             url.searchParams.set('secret', Secret)
             url.searchParams.set('key', key)
-            url.searchParams.set('content', btoa(content || ''))
+            url.searchParams.set('content', btoa(sanitizedContent || ''))
 
             chrome.windows.create({
                 url: url.href,
@@ -55,7 +59,6 @@
             });
         }
     });
-
 
     chrome.runtime.onMessage.addListener(
         function (request, sender, sendResponse) {
@@ -68,7 +71,7 @@
                     chrome.scripting.executeScript(
                         {
                             target: { tabId: tab },
-                            args: [content, target],
+                            args: [content, target], // Content is already sanitized by the sender
                             func: (content, target) => {
                                 const textOnly = (html) => {
                                     const htmlWithLineBreaks = html.replace(/<br*?>/g, '\r\n').replace(/<\/p>/g, '</p>\r\n')
@@ -82,9 +85,10 @@
                                 console.log(elem)
                                 if (elem) {
                                     if (elem.tagName.toLowerCase() === 'textarea') {
-                                        elem.textContent = textOnly(content)
+                                        elem.textContent = textOnly(content) // textOnly should ideally return safe text
                                     } else {
-                                        elem.innerHTML = content
+                                        // Ensure content is sanitized before setting innerHTML
+                                        elem.innerHTML = DOMPurify.sanitize(content);
                                     }
                                 }
                             }
