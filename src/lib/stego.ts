@@ -92,14 +92,17 @@ export function decode(stego: string): string {
     }
 }
 
+const regex_raw = START + '([\\s\\S]*?)' + END;
+const regex_single = new RegExp(regex_raw);
+const regex_global = new RegExp(regex_raw, 'g');
+
 /**
  * Strip stego payload from HTML.
  * @param {string} html The HTML string.
  * @returns {string} The HTML string with steganographic data removed.
  */
 export function stripStego(html: string): string {
-    const regex = new RegExp(`${START}[\s\S]*?${END}`, 'g');
-    return html.replace(regex, '');
+    return html.replace(regex_global, '');
 }
 
 /**
@@ -108,8 +111,7 @@ export function stripStego(html: string): string {
  * @returns {any | null} The parsed JSON object or null if not found or invalid.
  */
 export function extractStego(html: string): any | null {
-    const regex = new RegExp(`${START}([\s\S]*?)${END}`); // Non-greedy capture
-    const match = html.match(regex);
+    const match = html.match(regex_single);
 
     if (!match || match[1] === undefined) {
         return null;
