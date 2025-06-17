@@ -31,7 +31,7 @@ export default defineConfig({
     };
   },
   manifest: {
-    name: 'AI Content Editor',
+    name: 'ABScribeX',
     version: '1.0',
     description: 'Edit content with generative AI support',
     permissions: [
