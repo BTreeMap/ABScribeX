@@ -1,0 +1,29 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".", // Ensure baseUrl is set for path mapping if used
+    "paths": {
+      "~": [
+        "src/*"
+      ],
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "types": [
+      "chrome",
+      "vitest/globals" // Add vitest/globals for global test types
+    ] // Add chrome types explicitly
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/entrypoints/**/*.ts",
+    "src/types/**/*.d.ts",
+    "wxt.config.ts",
+    ".wxt/types/globals.d.ts",
+    "src/**/*.test.ts" // Include test files
+  ] // Ensure all relevant files are included
+}

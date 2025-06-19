@@ -39,7 +39,7 @@ npm run test     # Run tests
 
 ## Research Background
 
-ABScribeX is based on the [CHI 2024 paper](https://dl.acm.org/doi/10.1145/3613904.3641899) "ABScribe: Rapid Exploration & Organization of Multiple Writing Variations in Human-AI Co-Writing Tasks using Large Language Models" by Mohi Reza, Nathan Laundry, and colleagues. The research demonstrates that this interface approach significantly improves the writing process when working with AI-generated content.
+ABScribeX is based on the [CHI 2024 paper](https://doi.org/10.1145/3613904.3641899) "ABScribe: Rapid Exploration & Organization of Multiple Writing Variations in Human-AI Co-Writing Tasks using Large Language Models" by Mohi Reza, Nathan Laundry, and colleagues. The research demonstrates that this interface approach significantly improves the writing process when working with AI-generated content.
 
 ## License
 
