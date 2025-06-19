@@ -6,6 +6,10 @@ import './App.css';
 function App() {
   const [count, setCount] = useState(0);
 
+  const openOptions = () => {
+    chrome.runtime.openOptionsPage();
+  };
+
   return (
     <>
       <div>
@@ -16,17 +20,22 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>WXT + React</h1>
+      <h1>ABScribeX</h1>
       <div className="card">
+        <p>Right-click on any text field and select "Edit with ABScribe" to start editing.</p>
+
+        <div style={{ marginTop: '1rem' }}>
+          <button onClick={openOptions} style={{ marginBottom: '1rem' }}>
+            ⚙️ Settings
+          </button>
+        </div>
+
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
       </div>
       <p className="read-the-docs">
-        Click on the WXT and React logos to learn more
+        AI-powered writing assistant for any web editor
       </p>
     </>
   );

@@ -53,6 +53,10 @@ export default defineConfig({
       48: 'icon/48.png',
       128: 'icon/128.png'
     },
+    options_ui: {
+      page: 'options.html',
+      open_in_tab: true
+    },
     host_permissions: [
       "<all_urls>"
     ]

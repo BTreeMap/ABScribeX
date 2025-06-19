@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
+import { getSettings } from '@/lib/settings';
 
 import { defineBackground } from 'wxt/utils/define-background';
 
@@ -43,6 +44,7 @@ export default defineBackground(() => {
 
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
     if (info.menuItemId === "my-extension-edit" && tab?.id && lastClickedElement) {
+      const settings = await getSettings();
       const key = generateRandomHexString();
       mapTab.set(key, {
         tabId: tab.id,
@@ -55,17 +57,17 @@ export default defineBackground(() => {
       }
       const sanitizedContent = sanitizeHTML(content);
 
-      const popupUrl = new URL(chrome.runtime.getURL('popup/index.html')); // Correct path to WXT popup
-      popupUrl.searchParams.set('secret', Config.Secret);
+      // Use settings.editorUrl instead of hardcoded URL
+      const popupUrl = new URL(settings.editorUrl);
+      popupUrl.searchParams.set('secret', settings.secretKey);
       popupUrl.searchParams.set('key', key);
-      // Store content in local storage for the popup to retrieve
-      await chrome.storage.local.set({ [`popupData_${key}`]: { content: btoa(sanitizedContent || '') } });
+      popupUrl.searchParams.set('content', btoa(sanitizedContent || ''));
 
       chrome.windows.create({
         url: popupUrl.href,
         type: 'popup',
-        width: 800, // Adjusted width for a potentially richer editor
-        height: 600,
+        width: 400,
+        height: 600
       });
     }
   });
