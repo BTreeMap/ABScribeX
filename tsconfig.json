@@ -19,7 +19,9 @@
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "src/entrypoints/**/*.ts",
+    "src/types/**/*.d.ts",
     "wxt.config.ts",
     ".wxt/types/globals.d.ts",
     "src/**/*.test.ts" // Include test files
