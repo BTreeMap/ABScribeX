@@ -3,12 +3,47 @@ import { defineContentScript } from 'wxt/utils/define-content-script';
 import DOMPurify from 'dompurify';
 import { Config } from '@/lib/config';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
+import { getSettings } from '@/lib/settings';
 
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+// HTML tag allowlist filtering (from legacy implementation)
+const allowedTags = new Set(['div', 'p', 'span', 'br']);
+
+/**
+ * Checks if a tag name is in the allowlist
+ */
+const isValidTag = (tagName: string): boolean => {
+    return allowedTags.has(tagName.toLowerCase());
+};
+
+/**
+ * Recursively filters HTML nodes to only allow specific tags
+ */
+const filterNodes = (node: Element): void => {
+    const childNodes = Array.from(node.children);
+    for (const child of childNodes) {
+        if (!isValidTag(child.tagName)) {
+            node.removeChild(child);
+        } else {
+            filterNodes(child);
+        }
+    }
+};
+
+/**
+ * Filters HTML content to only allow specific tags
+ */
+const filterHTML = (htmlContent: string): string => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
+    filterNodes(tempDiv);
+    return tempDiv.innerHTML;
+};
 
 const trigger = (keyword: string): void => {
     const buttons = document.querySelectorAll('button');
@@ -38,7 +73,8 @@ const sync = (content: string, key: string): void => {
 
 const initializeEditorInteraction = async () => {
     const url = new URL(location.href);
-    if (url.searchParams.get('secret') !== Config.Secret) {
+    const settings = await getSettings();
+    if (url.searchParams.get('secret') !== settings.secretKey) {
         return;
     }
     const key = url.searchParams.get('key');
@@ -67,7 +103,7 @@ const initializeEditorInteraction = async () => {
         initialContent = '<p>Error decoding content.</p>';
     }
 
-    const sanitizedInitialContent = DOMPurify.sanitize(initialContent);
+    const sanitizedInitialContent = filterHTML(initialContent);
     let editorTarget: HTMLElement | null = document.getElementById('editor-container');
 
     if (!editorTarget) {
@@ -109,7 +145,7 @@ const initializeEditorInteraction = async () => {
                 editorTarget.innerHTML;
             const baseContent = stripStego(currentHTML);
             const stegoData = extractStego(currentHTML) || { oid: '' };
-            sync(DOMPurify.sanitize(baseContent) + encode(JSON.stringify(stegoData)), key);
+            sync(filterHTML(baseContent) + encode(JSON.stringify(stegoData)), key);
         }, 750);
         console.log('ABScribe: Editor sync interval started for target:', editorTarget.tagName);
     }
@@ -122,8 +158,12 @@ export default defineContentScript({
     main() {
         console.log('ABScribe: abscribe-frontend.content.ts main() called.');
         const url = new URL(location.href);
-        if (url.searchParams.get('secret') === Config.Secret && url.searchParams.get('key')) {
-            initializeEditorInteraction();
-        }
+        // Use async function to get settings
+        (async () => {
+            const settings = await getSettings();
+            if (url.searchParams.get('secret') === settings.secretKey && url.searchParams.get('key')) {
+                initializeEditorInteraction();
+            }
+        })();
     },
 });
