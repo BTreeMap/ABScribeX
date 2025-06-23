@@ -65,7 +65,7 @@ const trigger = (keyword: string): void => {
 
 const sync = async (content: string, key: string): Promise<void> => {
     const sanitizedContent = await sanitizeHTML(content);
-    
+
     const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
         content: sanitizedContent,
         key,

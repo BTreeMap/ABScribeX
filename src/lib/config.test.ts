@@ -4,7 +4,9 @@ import {
     createMessage,
     sendMessage,
     ClickedElementMessage,
-    SyncContentMessage
+    SyncContentMessage,
+    createStorage,
+    Storage
 } from './config';
 
 describe('MessageTypes', () => {
@@ -46,5 +48,21 @@ describe('MessageTypes', () => {
         expect(message.timestamp).toBeTypeOf('number');
         expect(message.element).toBeDefined();
         expect(message.element.tagName).toBe('div');
+    });
+});
+
+describe('Storage Factory', () => {
+    it('should create storage instances with different prefixes', () => {
+        const contentStorage = createStorage('content');
+        const tempStorage = createStorage('temp');
+        const cacheStorage = createStorage('cache');
+
+        expect(contentStorage.contentKey('test')).toBe('content_test');
+        expect(tempStorage.contentKey('test')).toBe('temp_test');
+        expect(cacheStorage.contentKey('test')).toBe('cache_test');
+    });
+
+    it('should provide default storage instance', () => {
+        expect(Storage.contentKey('test')).toBe('abscribe_content_test');
     });
 });

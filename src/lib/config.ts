@@ -152,57 +152,75 @@ export async function sendMessage<T extends BaseMessage, R = any>(
 }
 
 /**
- * Storage utility functions for consistent key naming
+ * Storage interface for typed storage instances
  */
-export const Storage = {
-    /**
-     * Generate storage key for content data
-     */
-    contentKey: (key: string): string => `abscribe_content_${key}`,
-    
-    /**
-     * Store content in chrome.storage.local
-     */
-    storeContent: async (key: string, content: string): Promise<void> => {
-        const storageKey = Storage.contentKey(key);
-        await chrome.storage.local.set({ [storageKey]: { content, timestamp: Date.now() } });
-        console.log(`Storage: Stored content for key ${key} as ${storageKey}`);
-    },
-    
-    /**
-     * Retrieve content from chrome.storage.local
-     */
-    getContent: async (key: string): Promise<string | null> => {
-        const storageKey = Storage.contentKey(key);
-        const data = await chrome.storage.local.get(storageKey);
-        
-        if (data[storageKey] && data[storageKey].content) {
-            console.log(`Storage: Retrieved content for key ${key} from ${storageKey}`);
-            return data[storageKey].content;
+export interface StorageInstance {
+    contentKey: (key: string) => string;
+    storeContent: (key: string, content: string) => Promise<void>;
+    getContent: (key: string) => Promise<string | null>;
+    removeContent: (key: string) => Promise<void>;
+    clearAllContent: () => Promise<void>;
+}
+
+/**
+ * Storage factory function to create storage instances with different prefixes
+ */
+export function createStorage(prefix: string): StorageInstance {
+    return {
+        /**
+         * Generate storage key for content data
+         */
+        contentKey: (key: string): string => `${prefix}_${key}`,
+
+        /**
+         * Store content in chrome.storage.local
+         */
+        storeContent: async (key: string, content: string): Promise<void> => {
+            const storageKey = `${prefix}_${key}`;
+            await chrome.storage.local.set({ [storageKey]: { content, timestamp: Date.now() } });
+            console.log(`Storage[${prefix}]: Stored content for key ${key} as ${storageKey}`);
+        },
+
+        /**
+         * Retrieve content from chrome.storage.local
+         */
+        getContent: async (key: string): Promise<string | null> => {
+            const storageKey = `${prefix}_${key}`;
+            const data = await chrome.storage.local.get(storageKey);
+
+            if (data[storageKey] && data[storageKey].content) {
+                console.log(`Storage[${prefix}]: Retrieved content for key ${key} from ${storageKey}`);
+                return data[storageKey].content;
+            }
+
+            console.warn(`Storage[${prefix}]: No content found for key ${key} (${storageKey})`);
+            return null;
+        },
+
+        /**
+         * Remove content from chrome.storage.local
+         */
+        removeContent: async (key: string): Promise<void> => {
+            const storageKey = `${prefix}_${key}`;
+            await chrome.storage.local.remove(storageKey);
+            console.log(`Storage[${prefix}]: Removed content for key ${key} (${storageKey})`);
+        },
+
+        /**
+         * Clear all content storage for this prefix (for debugging/cleanup)
+         */
+        clearAllContent: async (): Promise<void> => {
+            const allData = await chrome.storage.local.get();
+            const contentKeys = Object.keys(allData).filter(key => key.startsWith(`${prefix}_`));
+            if (contentKeys.length > 0) {
+                await chrome.storage.local.remove(contentKeys);
+                console.log(`Storage[${prefix}]: Cleared ${contentKeys.length} content entries`);
+            }
         }
-        
-        console.warn(`Storage: No content found for key ${key} (${storageKey})`);
-        return null;
-    },
-    
-    /**
-     * Remove content from chrome.storage.local
-     */
-    removeContent: async (key: string): Promise<void> => {
-        const storageKey = Storage.contentKey(key);
-        await chrome.storage.local.remove(storageKey);
-        console.log(`Storage: Removed content for key ${key} (${storageKey})`);
-    },
-    
-    /**
-     * Clear all content storage (for debugging/cleanup)
-     */
-    clearAllContent: async (): Promise<void> => {
-        const allData = await chrome.storage.local.get();
-        const contentKeys = Object.keys(allData).filter(key => key.startsWith('abscribe_content_'));
-        if (contentKeys.length > 0) {
-            await chrome.storage.local.remove(contentKeys);
-            console.log(`Storage: Cleared ${contentKeys.length} content entries`);
-        }
-    }
-};
+    };
+}
+
+/**
+ * Default storage instance for backward compatibility
+ */
+export const Storage = createStorage('abscribe_content');
