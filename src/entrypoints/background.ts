@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 import { getSettings } from '@/lib/settings';

@@ -1,6 +1,6 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
-import DOMPurify from 'dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 import { Config } from '@/lib/config';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings } from '@/lib/settings';
