@@ -5,7 +5,8 @@ import {
   ResponseMessage,
   ClickedElementData,
   ExtensionMessage,
-  createMessage
+  createMessage,
+  Storage
 } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 import { getSettings } from '@/lib/settings';
@@ -55,11 +56,13 @@ export default defineBackground(() => {
       }
       const sanitizedContent = await sanitizeHTML(content);
 
-      // Use settings.editorUrl instead of hardcoded URL
+      // Store content in chrome.storage.local instead of URL params
+      await Storage.storeContent(key, sanitizedContent);
+
+      // Use settings.editorUrl without deprecated base64 content param
       const popupUrl = new URL(settings.editorUrl);
       popupUrl.searchParams.set('secret', settings.activationKey);
       popupUrl.searchParams.set('key', key);
-      popupUrl.searchParams.set('content', btoa(sanitizedContent || ''));
 
       chrome.windows.create({
         url: popupUrl.href,
@@ -119,8 +122,8 @@ export default defineBackground(() => {
               }
             );
             console.log("Background: Content modification script executed.");
-            // Clean up stored data and map entry
-            await chrome.storage.local.remove(`popupData_${key}`);
+            // Clean up stored data and map entry using Storage utility
+            await Storage.removeContent(key);
             mapTab.delete(key);
 
             const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {

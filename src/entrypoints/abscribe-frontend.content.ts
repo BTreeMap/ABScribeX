@@ -4,9 +4,10 @@ import {
     MessageTypes,
     SyncContentMessage,
     createMessage,
-    sendMessage
+    sendMessage,
+    Storage
 } from '@/lib/config';
-import DOMPurify from 'dompurify';
+import { sanitizeHTML } from '@/lib/sanitizer';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings } from '@/lib/settings';
 
@@ -43,9 +44,9 @@ const filterNodes = (node: Element): void => {
 /**
  * Filters HTML content to only allow specific tags
  */
-const filterHTML = (htmlContent: string): string => {
+const filterHTML = async (htmlContent: string): Promise<string> => {
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent) as unknown as string;
+    tempDiv.innerHTML = await sanitizeHTML(htmlContent);
     filterNodes(tempDiv);
     return tempDiv.innerHTML;
 };
@@ -63,8 +64,8 @@ const trigger = (keyword: string): void => {
 };
 
 const sync = async (content: string, key: string): Promise<void> => {
-    const sanitizedContent = DOMPurify.sanitize(content) as unknown as string;
-
+    const sanitizedContent = await sanitizeHTML(content);
+    
     const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
         content: sanitizedContent,
         key,
@@ -91,26 +92,21 @@ const initializeEditorInteraction = async () => {
     console.log('ABScribe: Secret and key matched, abscribe-frontend.content.ts activating for editor interaction.');
 
     let initialContent = '<p>Loading content...</p>';
-    const storageKey = `popupData_${key}`;
     try {
-        const data = await chrome.storage.local.get(storageKey);
-        if (data[storageKey] && data[storageKey].content) {
-            initialContent = atob(data[storageKey].content);
+        // Use the centralized storage utility to get content
+        const storedContent = await Storage.getContent(key);
+        if (storedContent) {
+            initialContent = storedContent;
         } else {
-            console.warn(`ABScribe: Content not found in local storage for key ${storageKey}. Falling back to URL if present.`);
-            const contentB64 = url.searchParams.get('content');
-            if (contentB64) {
-                initialContent = atob(contentB64);
-            } else {
-                initialContent = '<p>Error: No content found.</p>';
-            }
+            console.warn(`ABScribe: Content not found in local storage for key ${key}.`);
+            initialContent = '<p>Error: No content found.</p>';
         }
     } catch (e) {
-        console.error('ABScribe: Failed to decode base64 content.', e);
-        initialContent = '<p>Error decoding content.</p>';
+        console.error('ABScribe: Failed to retrieve content from storage.', e);
+        initialContent = '<p>Error retrieving content.</p>';
     }
 
-    const sanitizedInitialContent = filterHTML(initialContent);
+    const sanitizedInitialContent = await filterHTML(initialContent);
     let editorTarget: HTMLElement | null = document.getElementById('editor-container');
 
     if (!editorTarget) {
@@ -152,7 +148,8 @@ const initializeEditorInteraction = async () => {
                 editorTarget.innerHTML;
             const baseContent = stripStego(currentHTML);
             const stegoData = extractStego(currentHTML) || { oid: '' };
-            await sync(filterHTML(baseContent) + encode(JSON.stringify(stegoData)), key);
+            const filteredContent = await filterHTML(baseContent);
+            await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
         }, 750);
         console.log('ABScribe: Editor sync interval started for target:', editorTarget.tagName);
     }

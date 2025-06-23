@@ -5,14 +5,14 @@ import {
     createMessage,
     sendMessage
 } from '@/lib/config';
-import DOMPurify from 'dompurify';
+import { sanitizeHTML } from '@/lib/sanitizer';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
 console.log('ABScribe: Capture clicked element script injected.');
 
-document.addEventListener('contextmenu', (event) => {
+document.addEventListener('contextmenu', async (event) => {
     const clickedElement = event.target as HTMLElement;
     if (!clickedElement || typeof clickedElement.tagName !== 'string') return;
 
@@ -29,13 +29,16 @@ document.addEventListener('contextmenu', (event) => {
     const classId = 'x' + generateRandomHexString();
     clickedElement.classList.add(classId);
 
+    // Sanitize HTML content using the cross-environment sanitizer
+    const sanitizedInnerHTML = await sanitizeHTML(clickedElement.innerHTML);
+
     const elementDetails: ClickedElementData = {
         tagName: clickedElement.tagName,
         id: clickedElement.id || undefined,
         parentId: namedParent?.id || undefined,
         classId,
         classList: Array.from(clickedElement.classList),
-        innerHTML: DOMPurify.sanitize(clickedElement.innerHTML) as unknown as string,
+        innerHTML: sanitizedInnerHTML,
         textContent: clickedElement.textContent,
         src: (clickedElement as HTMLImageElement | HTMLMediaElement).src || undefined,
         href: (clickedElement as HTMLAnchorElement).href || undefined,
