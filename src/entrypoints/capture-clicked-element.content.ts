@@ -26,7 +26,7 @@ document.addEventListener('contextmenu', async (event) => {
         }
     }
 
-    const classId = 'abscribex-' + generateIdentifier();
+    const classId = generateIdentifier('abscribex-');
     clickedElement.classList.add(classId);
 
     // Sanitize HTML content using the cross-environment sanitizer

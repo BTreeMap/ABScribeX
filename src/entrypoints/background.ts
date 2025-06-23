@@ -42,7 +42,7 @@ export default defineBackground(() => {
       console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
 
       const settings = await getSettings();
-      const key = generateIdentifier();
+      const key = generateIdentifier('popup-');
       console.log("ABScribe: Generated key for popup data:", key);
 
       mapTab.set(key, {
