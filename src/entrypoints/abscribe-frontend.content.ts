@@ -161,6 +161,7 @@ export default defineContentScript({
         // Use async function to get settings
         (async () => {
             const settings = await getSettings();
+            console.log('ABScribe: abscribe-frontend.content.ts settings loaded:', settings);
             if (url.searchParams.get('secret') === settings.activationKey && url.searchParams.get('key')) {
                 initializeEditorInteraction();
             }

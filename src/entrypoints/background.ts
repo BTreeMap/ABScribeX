@@ -36,14 +36,14 @@ export default defineBackground(() => {
 
   chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
-      id: "my-extension-edit",
+      id: "abscribex-edit-ert2oljan",
       title: "Edit with ABScribe",
       contexts: ["editable"]
     });
   });
 
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
-    if (info.menuItemId === "my-extension-edit" && tab?.id && lastClickedElement) {
+    if (info.menuItemId === "abscribex-edit-ert2oljan" && tab?.id && lastClickedElement) {
       const settings = await getSettings();
       const key = generateRandomHexString();
       mapTab.set(key, {
