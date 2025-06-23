@@ -44,8 +44,12 @@ export default defineBackground(() => {
 
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
     if (info.menuItemId === "abscribex-edit-ert2oljan" && tab?.id && lastClickedElement) {
+      console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
+
       const settings = await getSettings();
       const key = generateRandomHexString();
+      console.log("ABScribe: Generated key for popup data:", key);
+
       mapTab.set(key, {
         tabId: tab.id,
         target: lastClickedElement,
