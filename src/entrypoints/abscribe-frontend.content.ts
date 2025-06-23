@@ -64,10 +64,11 @@ const trigger = (keyword: string): void => {
 };
 
 const sync = async (content: string, key: string): Promise<void> => {
-    const sanitizedContent = await sanitizeHTML(content);
+    // const sanitizedContent = await sanitizeHTML(content);
+    console.log("ABScribe: Syncing content with key:", key, "Content length:", content.length);
 
     const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
-        content: sanitizedContent,
+        content: content,
         key,
     });
 
