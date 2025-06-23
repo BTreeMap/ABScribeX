@@ -188,7 +188,7 @@ export function createStorage(prefix: string): StorageInstance {
             const storageKey = `${prefix}_${key}`;
             const data = await chrome.storage.local.get(storageKey);
 
-            if (data[storageKey] && data[storageKey].content !== undefined) {
+            if (data[storageKey] && data[storageKey].timestamp) {
                 console.log(`Storage[${prefix}]: Retrieved content for key ${key} from ${storageKey}`);
                 return data[storageKey].content;
             }
