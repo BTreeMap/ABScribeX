@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import './Options.css';
-import { ExtensionSettings, defaultSettings, getSettings, saveSettings as saveSettingsToStorage } from '@/lib/settings';
+import { ExtensionSettings, defaultSettings, getSettings, saveSettings as saveSettingsToStorage, clearLocalStorage } from '@/lib/settings';
 
 function Options() {
   const [settings, setSettings] = useState<ExtensionSettings>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [isClearing, setIsClearing] = useState(false);
+  const [clearStatus, setClearStatus] = useState<'idle' | 'cleared' | 'error'>('idle');
 
   // Load settings on component mount
   useEffect(() => {
@@ -58,6 +60,25 @@ function Options() {
 
   const resetSettings = () => {
     setSettings(defaultSettings);
+  };
+
+  const clearLocalStorageData = async () => {
+    if (!confirm('Are you sure you want to clear all local storage? This will remove all cached content and cannot be undone.')) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      await clearLocalStorage();
+      setClearStatus('cleared');
+      setTimeout(() => setClearStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Failed to clear local storage:', error);
+      setClearStatus('error');
+      setTimeout(() => setClearStatus('idle'), 3000);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   return (
@@ -169,6 +190,22 @@ function Options() {
             + Add Modifier
           </button>
         </section>
+
+        <section className="settings-section">
+          <h2>Storage Management</h2>
+          <p>Manage your extension's local storage data</p>
+          
+          <div className="storage-info">
+            <h3>Clear Local Storage</h3>
+            <p>This will remove all cached content, stored data, and temporary files created by the extension. This action cannot be undone.</p>
+            <ul>
+              <li>Cached HTML content from edited elements</li>
+              <li>Temporary content storage</li>
+              <li>Other extension data stored locally</li>
+            </ul>
+            <p><strong>Note:</strong> Your extension settings will not be affected as they are stored separately.</p>
+          </div>
+        </section>
       </main>
 
       <footer className="options-footer">
@@ -179,6 +216,15 @@ function Options() {
             className="reset-button"
           >
             Reset to Defaults
+          </button>
+
+          <button
+            type="button"
+            onClick={clearLocalStorageData}
+            disabled={isClearing}
+            className={`clear-button ${clearStatus}`}
+          >
+            {isClearing ? 'Clearing...' : clearStatus === 'cleared' ? 'Cleared!' : clearStatus === 'error' ? 'Error!' : 'Clear Local Storage'}
           </button>
 
           <button
@@ -194,6 +240,8 @@ function Options() {
         <div className="save-status">
           {saveStatus === 'saved' && <span className="status-success">Settings saved successfully!</span>}
           {saveStatus === 'error' && <span className="status-error">Failed to save settings. Please try again.</span>}
+          {clearStatus === 'cleared' && <span className="status-success">Local storage cleared successfully!</span>}
+          {clearStatus === 'error' && <span className="status-error">Failed to clear local storage. Please try again.</span>}
         </div>
       </footer>
     </div>

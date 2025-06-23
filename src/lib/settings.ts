@@ -77,3 +77,20 @@ export function onSettingsChanged(
 ): void {
     chrome.storage.onChanged.addListener(callback);
 }
+
+/**
+ * Clear all chrome.storage.local content
+ * This will remove all stored content including cached data from the extension
+ */
+export async function clearLocalStorage(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.clear(() => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                console.log('All chrome.storage.local content has been cleared');
+                resolve();
+            }
+        });
+    });
+}
