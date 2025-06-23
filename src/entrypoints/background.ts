@@ -8,7 +8,7 @@ import {
   createMessage,
   ContentStorage
 } from '@/lib/config';
-import { generateRandomHexString } from '@/lib/generateRandomHexString';
+import { generateIdentifier } from '@/lib/generateIdentifier';
 import { getSettings } from '@/lib/settings';
 import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
 
@@ -42,7 +42,7 @@ export default defineBackground(() => {
       console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
 
       const settings = await getSettings();
-      const key = generateRandomHexString();
+      const key = generateIdentifier();
       console.log("ABScribe: Generated key for popup data:", key);
 
       mapTab.set(key, {

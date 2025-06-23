@@ -6,7 +6,7 @@ import {
     sendMessage
 } from '@/lib/config';
 import { sanitizeHTML } from '@/lib/sanitizer';
-import { generateRandomHexString } from '@/lib/generateRandomHexString';
+import { generateIdentifier } from '@/lib/generateIdentifier';
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
@@ -26,7 +26,7 @@ document.addEventListener('contextmenu', async (event) => {
         }
     }
 
-    const classId = 'x' + generateRandomHexString();
+    const classId = 'abscribex-' + generateIdentifier();
     clickedElement.classList.add(classId);
 
     // Sanitize HTML content using the cross-environment sanitizer
