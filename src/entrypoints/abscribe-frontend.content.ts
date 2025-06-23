@@ -1,11 +1,13 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
-import DOMPurify from 'isomorphic-dompurify';
+import { getDOMPurify } from '@/lib/sanitizer';
 import { Config } from '@/lib/config';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings } from '@/lib/settings';
 
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
+
+const DOMPurify = getDOMPurify();
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -40,7 +42,7 @@ const filterNodes = (node: Element): void => {
  */
 const filterHTML = (htmlContent: string): string => {
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
+    tempDiv.innerHTML = DOMPurify?.sanitize(htmlContent) || htmlContent;
     filterNodes(tempDiv);
     return tempDiv.innerHTML;
 };
@@ -58,7 +60,7 @@ const trigger = (keyword: string): void => {
 };
 
 const sync = (content: string, key: string): void => {
-    const sanitizedContent = DOMPurify.sanitize(content);
+    const sanitizedContent = DOMPurify?.sanitize(content) || content;
     chrome.runtime.sendMessage({
         message: Config.Tag + JSON.stringify({
             content: sanitizedContent,

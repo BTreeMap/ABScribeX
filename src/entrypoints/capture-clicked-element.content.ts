@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify';
+import { getDOMPurify } from '@/lib/sanitizer';
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
@@ -17,6 +17,8 @@ interface ClickedElementDetails {
 }
 
 console.log('ABScribe: Capture clicked element script injected.');
+
+const DOMPurify = getDOMPurify();
 
 document.addEventListener('contextmenu', (event) => {
     const clickedElement = event.target as HTMLElement;
@@ -41,7 +43,7 @@ document.addEventListener('contextmenu', (event) => {
         parentId: namedParent?.id || undefined,
         classId,
         classList: Array.from(clickedElement.classList),
-        innerHTML: DOMPurify.sanitize(clickedElement.innerHTML),
+        innerHTML: DOMPurify?.sanitize(clickedElement.innerHTML) || clickedElement.innerHTML,
         textContent: clickedElement.textContent,
         src: (clickedElement as HTMLImageElement | HTMLMediaElement).src || undefined,
         href: (clickedElement as HTMLAnchorElement).href || undefined,

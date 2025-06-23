@@ -1,7 +1,7 @@
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 import { getSettings } from '@/lib/settings';
-import { sanitizeHTML } from '@/lib/sanitizer';
+import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
 
 import { defineBackground } from 'wxt/utils/define-background';
 
@@ -55,7 +55,7 @@ export default defineBackground(() => {
       if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
         content = content.replace(/\n/g, '<br/>');
       }
-      const sanitizedContent = sanitizeHTML(content);
+      const sanitizedContent = await sanitizeHTML(content);
 
       // Use settings.editorUrl instead of hardcoded URL
       const popupUrl = new URL(settings.editorUrl);
@@ -89,16 +89,12 @@ export default defineBackground(() => {
               sendResponse({ status: "error", message: "Target element info missing." });
               return true; // Indicate async response
             }
-            // Pre-sanitize content in background script where DOMPurify is available
-            const sanitizedContent = sanitizeHTML(content);
+            // Pre-sanitize content in background script using offscreen API
+            const sanitizedContent = await sanitizeHTML(content);
 
             // For textareas, we need to extract text content from HTML
-            const textOnlyContent = (() => {
-              const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
-              const div = document.createElement('div');
-              div.innerHTML = sanitizeHTML(htmlWithLineBreaks);
-              return div.textContent || '';
-            })();
+            const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
+            const textOnlyContent = await extractTextFromHTML(htmlWithLineBreaks);
 
             await chrome.scripting.executeScript(
               {

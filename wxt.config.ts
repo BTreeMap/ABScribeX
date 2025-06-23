@@ -38,7 +38,8 @@ export default defineConfig({
       "contextMenus",
       "activeTab",
       "scripting",
-      "storage" // Added because the background script uses chrome.storage
+      "storage", // Added because the background script uses chrome.storage
+      "offscreen" // Added for offscreen document API
     ],
     action: {
       default_popup: 'popup/index.html',
