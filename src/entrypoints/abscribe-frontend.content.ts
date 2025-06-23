@@ -74,7 +74,7 @@ const sync = (content: string, key: string): void => {
 const initializeEditorInteraction = async () => {
     const url = new URL(location.href);
     const settings = await getSettings();
-    if (url.searchParams.get('secret') !== settings.secretKey) {
+    if (url.searchParams.get('secret') !== settings.activationKey) {
         return;
     }
     const key = url.searchParams.get('key');
@@ -161,7 +161,7 @@ export default defineContentScript({
         // Use async function to get settings
         (async () => {
             const settings = await getSettings();
-            if (url.searchParams.get('secret') === settings.secretKey && url.searchParams.get('key')) {
+            if (url.searchParams.get('secret') === settings.activationKey && url.searchParams.get('key')) {
                 initializeEditorInteraction();
             }
         })();

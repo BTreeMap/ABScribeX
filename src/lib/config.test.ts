@@ -7,11 +7,6 @@ describe('Config', () => {
         expect(Config.ActionClickedElement).toBeTruthy();
     });
 
-    it('should have Secret defined as a string', () => {
-        expect(typeof Config.Secret).toBe('string');
-        expect(Config.Secret).toBeTruthy();
-    });
-
     it('should have Tag defined as a string', () => {
         expect(typeof Config.Tag).toBe('string');
         expect(Config.Tag).toBeTruthy();

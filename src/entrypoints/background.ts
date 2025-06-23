@@ -59,7 +59,7 @@ export default defineBackground(() => {
 
       // Use settings.editorUrl instead of hardcoded URL
       const popupUrl = new URL(settings.editorUrl);
-      popupUrl.searchParams.set('secret', settings.secretKey);
+      popupUrl.searchParams.set('secret', settings.activationKey);
       popupUrl.searchParams.set('key', key);
       popupUrl.searchParams.set('content', btoa(sanitizedContent || ''));
 

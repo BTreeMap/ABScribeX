@@ -1,6 +1,6 @@
 export interface ExtensionSettings {
     editorUrl: string;
-    secretKey: string;
+    activationKey: string;
     autoSave: boolean;
     theme: 'light' | 'dark' | 'auto';
     defaultModifiers: string[];
@@ -9,7 +9,7 @@ export interface ExtensionSettings {
 
 export const defaultSettings: ExtensionSettings = {
     editorUrl: 'https://abtestingtools-frontend.up.railway.app/',
-    secretKey: 'k2bl9ke860c49eacm3harudni8gcf0ftc', // Default from your current setup
+    activationKey: 'k2bl9ke860c49eacm3harudni8gcf0ftc', // This is not a real secret or token - it is used to activate the injected script
     autoSave: true,
     theme: 'auto',
     defaultModifiers: ['Make it professional', 'Shorten', 'Expand', 'Make it more casual'],

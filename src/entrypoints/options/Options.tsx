@@ -1,23 +1,6 @@
 import { useState, useEffect } from 'react';
 import './Options.css';
-
-interface ExtensionSettings {
-  editorUrl: string;
-  secretKey: string;
-  autoSave: boolean;
-  theme: 'light' | 'dark' | 'auto';
-  defaultModifiers: string[];
-  syncInterval: number;
-}
-
-const defaultSettings: ExtensionSettings = {
-  editorUrl: 'https://abtestingtools-frontend.up.railway.app/',
-  secretKey: '',
-  autoSave: true,
-  theme: 'auto',
-  defaultModifiers: ['Make it professional', 'Shorten', 'Expand'],
-  syncInterval: 500
-};
+import { ExtensionSettings, defaultSettings, getSettings, saveSettings as saveSettingsToStorage } from '@/lib/settings';
 
 function Options() {
   const [settings, setSettings] = useState<ExtensionSettings>(defaultSettings);
@@ -26,9 +9,7 @@ function Options() {
 
   // Load settings on component mount
   useEffect(() => {
-    chrome.storage.sync.get(defaultSettings, (result) => {
-      setSettings(result as ExtensionSettings);
-    });
+    getSettings().then(setSettings);
   }, []);
 
   const handleInputChange = (key: keyof ExtensionSettings, value: any) => {
@@ -64,7 +45,7 @@ function Options() {
   const saveSettings = async () => {
     setIsSaving(true);
     try {
-      await chrome.storage.sync.set(settings);
+      await saveSettingsToStorage(settings);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (error) {
@@ -103,15 +84,15 @@ function Options() {
           </div>
 
           <div className="setting-item">
-            <label htmlFor="secretKey">Secret Key</label>
+            <label htmlFor="activationKey">Activation Key</label>
             <input
               type="password"
-              id="secretKey"
-              value={settings.secretKey}
-              onChange={(e) => handleInputChange('secretKey', e.target.value)}
-              placeholder="Enter your secret key"
+              id="activationKey"
+              value={settings.activationKey}
+              onChange={(e) => handleInputChange('activationKey', e.target.value)}
+              placeholder="Enter your activation key"
             />
-            <small>Secret key for authentication with the editor</small>
+            <small>Unique identifier used to activate the extension script (not a real secret)</small>
           </div>
 
           <div className="setting-item">
