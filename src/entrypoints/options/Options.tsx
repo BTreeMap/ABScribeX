@@ -194,7 +194,7 @@ function Options() {
         <section className="settings-section">
           <h2>Storage Management</h2>
           <p>Manage your extension's local storage data</p>
-          
+
           <div className="storage-info">
             <h3>Clear Local Storage</h3>
             <p>This will remove all cached content, stored data, and temporary files created by the extension. This action cannot be undone.</p>
