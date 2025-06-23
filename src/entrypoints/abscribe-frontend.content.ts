@@ -5,7 +5,7 @@ import {
     SyncContentMessage,
     createMessage,
     sendMessage,
-    Storage
+    ContentStorage
 } from '@/lib/config';
 import { sanitizeHTML } from '@/lib/sanitizer';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
@@ -93,16 +93,16 @@ const initializeEditorInteraction = async () => {
 
     let initialContent = '<p>Loading content...</p>';
     try {
-        // Use the centralized storage utility to get content
-        const storedContent = await Storage.getContent(key);
+        // Use the centralized ContentStorage utility to get content
+        const storedContent = await ContentStorage.getContent(key);
         if (storedContent) {
             initialContent = storedContent;
         } else {
-            console.warn(`ABScribe: Content not found in local storage for key ${key}.`);
+            console.warn(`ABScribe: Content not found in local ContentStorage for key ${key}.`);
             initialContent = '<p>Error: No content found.</p>';
         }
     } catch (e) {
-        console.error('ABScribe: Failed to retrieve content from storage.', e);
+        console.error('ABScribe: Failed to retrieve content from ContentStorage.', e);
         initialContent = '<p>Error retrieving content.</p>';
     }
 

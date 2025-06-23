@@ -6,7 +6,7 @@ import {
   ClickedElementData,
   ExtensionMessage,
   createMessage,
-  Storage
+  ContentStorage
 } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 import { getSettings } from '@/lib/settings';
@@ -56,8 +56,8 @@ export default defineBackground(() => {
       }
       const sanitizedContent = await sanitizeHTML(content);
 
-      // Store content in chrome.storage.local instead of URL params
-      await Storage.storeContent(key, sanitizedContent);
+      // Store content in chrome.ContentStorage.local instead of URL params
+      await ContentStorage.storeContent(key, sanitizedContent);
 
       // Use settings.editorUrl without deprecated base64 content param
       const popupUrl = new URL(settings.editorUrl);
@@ -122,8 +122,8 @@ export default defineBackground(() => {
               }
             );
             console.log("Background: Content modification script executed.");
-            // Clean up stored data and map entry using Storage utility
-            await Storage.removeContent(key);
+            // Clean up stored data and map entry using ContentStorage utility
+            await ContentStorage.removeContent(key);
             mapTab.delete(key);
 
             const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {

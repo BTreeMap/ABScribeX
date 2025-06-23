@@ -221,6 +221,6 @@ export function createStorage(prefix: string): StorageInstance {
 }
 
 /**
- * Default storage instance for backward compatibility
+ * Default storage instance for content data
  */
-export const Storage = createStorage('abscribe_content');
+export const ContentStorage = createStorage('e9hfahco3');

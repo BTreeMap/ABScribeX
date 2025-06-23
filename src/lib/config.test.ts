@@ -6,7 +6,7 @@ import {
     ClickedElementMessage,
     SyncContentMessage,
     createStorage,
-    Storage
+    ContentStorage
 } from './config';
 
 describe('MessageTypes', () => {
@@ -63,6 +63,6 @@ describe('Storage Factory', () => {
     });
 
     it('should provide default storage instance', () => {
-        expect(Storage.contentKey('test')).toBe('abscribe_content_test');
+        expect(ContentStorage.contentKey('test')).toBe('e9hfahco3_test');
     });
 });
