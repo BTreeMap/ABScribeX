@@ -108,6 +108,22 @@ const initializeEditorInteraction = async () => {
     }
 
     const sanitizedInitialContent = await filterHTML(initialContent);
+
+    // Extract existing stego data from the initial content to check for an oid
+    const existingStegoData = extractStego(initialContent);
+    const extractedOid = existingStegoData?.oid;
+
+    // If we found an oid in the stego data, update the URL fragment
+    if (extractedOid && extractedOid !== '') {
+        const currentUrl = new URL(location.href);
+
+        // Set hash directly to /document/{oid}
+        currentUrl.hash = `/document/${extractedOid}`;
+
+        console.log(`ABScribe: Found oid in stego data: ${extractedOid}, updating URL to: ${currentUrl.href}`);
+        window.history.replaceState(null, '', currentUrl.href);
+    }
+
     let editorTarget: HTMLElement | null = document.getElementById('editor-container');
 
     if (!editorTarget) {
@@ -139,7 +155,9 @@ const initializeEditorInteraction = async () => {
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     } else {
-        editorTarget.innerHTML = sanitizedInitialContent + encode(JSON.stringify({ oid: '' }));
+        // Preserve the existing oid if found, otherwise use empty string
+        const oidToUse = extractedOid || '';
+        editorTarget.innerHTML = sanitizedInitialContent + encode(JSON.stringify({ oid: oidToUse }));
     }
 
     if (editorTarget) {
