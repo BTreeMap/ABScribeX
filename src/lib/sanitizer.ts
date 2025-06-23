@@ -173,15 +173,3 @@ export async function extractTextFromHTML(html: string): Promise<string> {
         return html.replace(/<[^>]*>/g, '');
     }
 }
-
-/**
- * Get the DOMPurify instance (only available in DOM contexts)
- * @deprecated Use sanitizeHTML instead for cross-environment compatibility
- */
-export function getDOMPurify(): typeof DOMPurify | null {
-    if (hasDOMAccess()) {
-        return DOMPurify;
-    }
-    console.warn('DOMPurify not available in service worker context. Use sanitizeHTML instead.');
-    return null;
-}

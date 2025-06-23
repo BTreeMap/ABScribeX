@@ -5,14 +5,12 @@ import {
     createMessage,
     sendMessage
 } from '@/lib/config';
-import { getDOMPurify } from '@/lib/sanitizer';
+import DOMPurify from 'dompurify';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
 console.log('ABScribe: Capture clicked element script injected.');
-
-const DOMPurify = getDOMPurify();
 
 document.addEventListener('contextmenu', (event) => {
     const clickedElement = event.target as HTMLElement;
@@ -37,7 +35,7 @@ document.addEventListener('contextmenu', (event) => {
         parentId: namedParent?.id || undefined,
         classId,
         classList: Array.from(clickedElement.classList),
-        innerHTML: DOMPurify?.sanitize(clickedElement.innerHTML) || clickedElement.innerHTML,
+        innerHTML: DOMPurify.sanitize(clickedElement.innerHTML) as unknown as string,
         textContent: clickedElement.textContent,
         src: (clickedElement as HTMLImageElement | HTMLMediaElement).src || undefined,
         href: (clickedElement as HTMLAnchorElement).href || undefined,
