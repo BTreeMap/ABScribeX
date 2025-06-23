@@ -20,8 +20,8 @@ interface ClickedElementData {
 export default defineBackground(() => {
   console.log('ABScribe Background Service Worker Loaded.');
 
-  let lastClickedElement: ClickedElementData | null = null;
-  const mapTab = new Map<string, { tabId: number; target: ClickedElementData }>();
+  let lastClickedElement: ClickedElementData | undefined = undefined;
+  const mapTab = new Map<string, { tabId?: number; target?: ClickedElementData }>();
 
   chrome.runtime.onMessage.addListener((message: { action: string; element: ClickedElementData }, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
     if (message.action === Config.ActionClickedElement) {
@@ -43,7 +43,7 @@ export default defineBackground(() => {
   });
 
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
-    if (info.menuItemId === "abscribex-edit-ert2oljan" && tab?.id && lastClickedElement) {
+    if (info.menuItemId === "abscribex-edit-ert2oljan") {
       console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
 
       const settings = await getSettings();
@@ -51,12 +51,12 @@ export default defineBackground(() => {
       console.log("ABScribe: Generated key for popup data:", key);
 
       mapTab.set(key, {
-        tabId: tab.id,
+        tabId: tab?.id,
         target: lastClickedElement,
       });
 
-      let content = lastClickedElement.innerHTML || '';
-      if (lastClickedElement.tagName.toLowerCase() === 'textarea') {
+      let content = lastClickedElement?.innerHTML || '';
+      if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
         content = content.replace(/\n/g, '<br/>');
       }
       const sanitizedContent = sanitizeHTML(content);
@@ -88,6 +88,11 @@ export default defineBackground(() => {
 
           if (value && value.tabId && content !== undefined) {
             const { tabId, target } = value;
+            if (!target) {
+              console.warn("Background: No target element info found for key:", key);
+              sendResponse({ status: "error", message: "Target element info missing." });
+              return true; // Indicate async response
+            }
             await chrome.scripting.executeScript(
               {
                 target: { tabId: tabId },
