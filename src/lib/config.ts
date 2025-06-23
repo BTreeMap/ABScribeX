@@ -3,17 +3,17 @@
  */
 export const MessageTypes = {
     // Content script to background messages
-    CLICKED_ELEMENT: 'abscribe_clicked_element',
-    SYNC_CONTENT: 'abscribe_sync_content',
+    CLICKED_ELEMENT: 'klagjuvn54uh6ibtrpm0bo6fsgn68vgdl',
+    SYNC_CONTENT: 'kkv54gn4p049hgucu8ouenjlm8bgdm1b1',
 
     // Service worker to offscreen document messages
-    SANITIZE_HTML: 'abscribe_sanitize_html',
-    EXTRACT_TEXT: 'abscribe_extract_text',
-    PING_OFFSCREEN: 'abscribe_ping_offscreen',
+    SANITIZE_HTML: 'kdcept35l383b0ghrg0b14kr8huq1c43a',
+    EXTRACT_TEXT: 'k8h8sqp73psd7fivnklvpl3i65s5qb6e2',
+    PING_OFFSCREEN: 'ks5aae0o5ck3b2phohebenr36j9sodcml',
 
     // Response types
-    SUCCESS: 'abscribe_success',
-    ERROR: 'abscribe_error',
+    SUCCESS: 'k5rmqq7keoairttogvcj85sa6p57dunvc',
+    ERROR: 'ktpsfphjd2q6n4m82dt5fpooapi9j2tkn',
 } as const;
 
 /**
