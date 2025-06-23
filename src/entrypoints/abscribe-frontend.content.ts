@@ -172,7 +172,7 @@ const initializeEditorInteraction = async () => {
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     } else {
-        editorTarget.innerHTML = sanitizedInitialContent;
+        editorTarget.innerHTML = stripStego(sanitizedInitialContent);
     }
 
     if (editorTarget) {
@@ -180,8 +180,8 @@ const initializeEditorInteraction = async () => {
             const currentHTML = (editorTarget as HTMLTextAreaElement).value !== undefined ?
                 (editorTarget as HTMLTextAreaElement).value :
                 editorTarget.innerHTML;
-            const baseContent = stripStego(currentHTML);
-            const stegoData = extractStego(currentHTML) || { oid: oid };
+            const baseContent = currentHTML;
+            const stegoData = { oid: oid };
             const filteredContent = await filterHTML(baseContent);
             await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
         }, 750);
