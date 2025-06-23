@@ -95,7 +95,7 @@ const initializeEditorInteraction = async () => {
     try {
         // Use the centralized ContentStorage utility to get content
         const storedContent = await ContentStorage.getContent(key);
-        if (storedContent) {
+        if (typeof storedContent === 'string') {
             initialContent = storedContent;
         } else {
             console.warn(`ABScribe: Content not found in local ContentStorage for key ${key}.`);
