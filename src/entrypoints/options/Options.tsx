@@ -70,7 +70,7 @@ function Options() {
       <main className="options-content">
         <section className="settings-section">
           <h2>Editor Configuration</h2>
-          
+
           <div className="setting-item">
             <label htmlFor="editorUrl">Editor URL</label>
             <input
@@ -86,7 +86,7 @@ function Options() {
           <div className="setting-item">
             <label htmlFor="activationKey">Activation Key</label>
             <input
-              type="password"
+              type="text"
               id="activationKey"
               value={settings.activationKey}
               onChange={(e) => handleInputChange('activationKey', e.target.value)}
@@ -112,7 +112,7 @@ function Options() {
 
         <section className="settings-section">
           <h2>User Interface</h2>
-          
+
           <div className="setting-item">
             <label htmlFor="theme">Theme</label>
             <select
@@ -143,7 +143,7 @@ function Options() {
         <section className="settings-section">
           <h2>AI Modifiers</h2>
           <p>Configure default AI modification prompts for quick access</p>
-          
+
           <div className="modifiers-list">
             {settings.defaultModifiers.map((modifier, index) => (
               <div key={index} className="modifier-item">
@@ -164,7 +164,7 @@ function Options() {
               </div>
             ))}
           </div>
-          
+
           <button type="button" onClick={addModifier} className="add-button">
             + Add Modifier
           </button>
@@ -180,7 +180,7 @@ function Options() {
           >
             Reset to Defaults
           </button>
-          
+
           <button
             type="button"
             onClick={saveSettings}
@@ -190,7 +190,7 @@ function Options() {
             {isSaving ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : saveStatus === 'error' ? 'Error!' : 'Save Settings'}
           </button>
         </div>
-        
+
         <div className="save-status">
           {saveStatus === 'saved' && <span className="status-success">Settings saved successfully!</span>}
           {saveStatus === 'error' && <span className="status-error">Failed to save settings. Please try again.</span>}
