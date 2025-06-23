@@ -1,7 +1,7 @@
-import DOMPurify from 'isomorphic-dompurify';
 import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 import { getSettings } from '@/lib/settings';
+import { sanitizeHTML } from '@/lib/sanitizer';
 
 import { defineBackground } from 'wxt/utils/define-background';
 
@@ -29,10 +29,6 @@ export default defineBackground(() => {
     }
     return true; // Keep message channel open for async response if needed
   });
-
-  const sanitizeHTML = (html: string): string => {
-    return DOMPurify.sanitize(html);
-  };
 
   chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
