@@ -9,7 +9,7 @@ export interface ExtensionSettings {
 
 export const defaultSettings: ExtensionSettings = {
     editorUrl: 'https://abtestingtools-frontend.up.railway.app/',
-    secretKey: '8ac934c3-01a4-771b-c585-c8a98c00ab3a', // Default from your current setup
+    secretKey: 'k2bl9ke860c49eacm3harudni8gcf0ftc', // Default from your current setup
     autoSave: true,
     theme: 'auto',
     defaultModifiers: ['Make it professional', 'Shorten', 'Expand', 'Make it more casual'],
