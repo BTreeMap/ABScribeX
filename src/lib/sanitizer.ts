@@ -7,10 +7,19 @@
  */
 
 import DOMPurify from 'dompurify';
+import { 
+    MessageTypes, 
+    createMessage, 
+    sendMessage,
+    SanitizeHTMLMessage,
+    ExtractTextMessage,
+    PingOffscreenMessage,
+    SanitizationResponse,
+    TextExtractionResponse
+} from '@/lib/config';
 
 // Global state management
 let offscreenDocumentReady = false;
-let pendingRequests = new Map<string, { resolve: Function; reject: Function }>();
 let requestCounter = 0;
 
 /**
@@ -51,9 +60,8 @@ async function ensureOffscreenDocument(): Promise<void> {
         }
 
         // Verify the document is ready
-        const response = await chrome.runtime.sendMessage({
-            type: 'PING_OFFSCREEN'
-        });
+        const pingMessage = createMessage<PingOffscreenMessage>(MessageTypes.PING_OFFSCREEN, {});
+        const response = await sendMessage(pingMessage);
 
         if (response?.status === 'ready') {
             offscreenDocumentReady = true;
@@ -73,27 +81,19 @@ async function sanitizeInOffscreen(html: string, options?: any): Promise<string>
     await ensureOffscreenDocument();
 
     const requestId = `sanitize_${++requestCounter}`;
-
-    return new Promise((resolve, reject) => {
-        pendingRequests.set(requestId, { resolve, reject });
-
-        chrome.runtime.sendMessage({
-            type: 'SANITIZE_HTML',
-            id: requestId,
-            html,
-            options
-        }).then(response => {
-            pendingRequests.delete(requestId);
-            if (response.error) {
-                reject(new Error(response.error));
-            } else {
-                resolve(response.sanitizedHtml);
-            }
-        }).catch(error => {
-            pendingRequests.delete(requestId);
-            reject(error);
-        });
+    const message = createMessage<SanitizeHTMLMessage>(MessageTypes.SANITIZE_HTML, {
+        id: requestId,
+        html,
+        options
     });
+
+    const response = await sendMessage<SanitizeHTMLMessage, SanitizationResponse>(message);
+    
+    if (response.error) {
+        throw new Error(response.error);
+    }
+    
+    return response.sanitizedHtml || '';
 }
 
 /**
@@ -103,26 +103,18 @@ async function extractTextInOffscreen(html: string): Promise<string> {
     await ensureOffscreenDocument();
 
     const requestId = `extract_${++requestCounter}`;
-
-    return new Promise((resolve, reject) => {
-        pendingRequests.set(requestId, { resolve, reject });
-
-        chrome.runtime.sendMessage({
-            type: 'EXTRACT_TEXT',
-            id: requestId,
-            html
-        }).then(response => {
-            pendingRequests.delete(requestId);
-            if (response.error) {
-                reject(new Error(response.error));
-            } else {
-                resolve(response.textContent);
-            }
-        }).catch(error => {
-            pendingRequests.delete(requestId);
-            reject(error);
-        });
+    const message = createMessage<ExtractTextMessage>(MessageTypes.EXTRACT_TEXT, {
+        id: requestId,
+        html
     });
+
+    const response = await sendMessage<ExtractTextMessage, TextExtractionResponse>(message);
+    
+    if (response.error) {
+        throw new Error(response.error);
+    }
+    
+    return response.textContent || '';
 }
 
 /**

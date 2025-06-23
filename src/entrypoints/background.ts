@@ -1,21 +1,17 @@
-import { Config } from '@/lib/config';
+import { 
+  MessageTypes, 
+  ClickedElementMessage, 
+  SyncContentMessage,
+  ResponseMessage,
+  ClickedElementData,
+  ExtensionMessage,
+  createMessage
+} from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 import { getSettings } from '@/lib/settings';
 import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
 
 import { defineBackground } from 'wxt/utils/define-background';
-
-interface ClickedElementData {
-  tagName: string;
-  id?: string;
-  parentId?: string;
-  classId: string;
-  classList?: DOMTokenList; // In content script, this will be string[]
-  innerHTML?: string;
-  textContent?: string | null;
-  src?: string;
-  href?: string;
-}
 
 export default defineBackground(() => {
   console.log('ABScribe Background Service Worker Loaded.');
@@ -23,9 +19,11 @@ export default defineBackground(() => {
   let lastClickedElement: ClickedElementData | undefined = undefined;
   const mapTab = new Map<string, { tabId?: number; target?: ClickedElementData }>();
 
-  chrome.runtime.onMessage.addListener((message: { action: string; element: ClickedElementData }, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-    if (message.action === Config.ActionClickedElement) {
-      lastClickedElement = message.element;
+  chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+    if (message.type === MessageTypes.CLICKED_ELEMENT) {
+      const clickedMessage = message as ClickedElementMessage;
+      lastClickedElement = clickedMessage.element;
+      console.log('Background: Received clicked element:', lastClickedElement);
     }
     return true; // Keep message channel open for async response if needed
   });
@@ -73,20 +71,25 @@ export default defineBackground(() => {
   });
 
   chrome.runtime.onMessage.addListener(
-    async (request: { message?: string; content?: string; key?: string }, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-      if (request.message && request.message.startsWith(Config.Tag)) {
+    async (request: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+      if (request.type === MessageTypes.SYNC_CONTENT) {
+        const syncMessage = request as SyncContentMessage;
+        
         try {
-          const parsedData = JSON.parse(request.message.substring(Config.Tag.length));
-          const { content, key } = parsedData;
+          const { content, key } = syncMessage;
 
-          console.log("Background: Received message tagged for processing: ", { content, key });
+          console.log("Background: Received sync content message: ", { content, key });
           const value = mapTab.get(key);
 
           if (value && value.tabId && content !== undefined) {
             const { tabId, target } = value;
             if (!target) {
               console.warn("Background: No target element info found for key:", key);
-              sendResponse({ status: "error", message: "Target element info missing." });
+              const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+                status: "error",
+                message: "Target element info missing."
+              });
+              sendResponse(errorResponse);
               return true; // Indicate async response
             }
             // Pre-sanitize content in background script using offscreen API
@@ -119,18 +122,28 @@ export default defineBackground(() => {
             // Clean up stored data and map entry
             await chrome.storage.local.remove(`popupData_${key}`);
             mapTab.delete(key);
-            sendResponse({ status: "success", message: "Content updated." });
+            
+            const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {
+              status: "success",
+              message: "Content updated."
+            });
+            sendResponse(successResponse);
           } else {
             console.warn("Background: No tab/target info found for key, or content was undefined", { key, contentExists: content !== undefined });
-            sendResponse({ status: "error", message: "Missing info for update." });
+            const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+              status: "error",
+              message: "Missing info for update."
+            });
+            sendResponse(errorResponse);
           }
         } catch (e: any) {
           console.error("Background: Error processing message:", e?.message || e);
-          sendResponse({ status: "error", message: e?.message || "Unknown error" });
+          const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+            status: "error",
+            message: e?.message || "Unknown error"
+          });
+          sendResponse(errorResponse);
         }
-      } else if (request.content && request.key) {
-        // Handle direct content/key messages if needed (alternative to tagged messages)
-        console.log("Background: Received direct content/key message (uncommon path)", request);
       }
       return true; // Indicate async response
     }

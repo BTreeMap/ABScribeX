@@ -1,7 +1,12 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
+import { 
+  MessageTypes, 
+  SyncContentMessage, 
+  createMessage, 
+  sendMessage 
+} from '@/lib/config';
 import { getDOMPurify } from '@/lib/sanitizer';
-import { Config } from '@/lib/config';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings } from '@/lib/settings';
 
@@ -59,18 +64,20 @@ const trigger = (keyword: string): void => {
     console.log(`ABScribe: No button found with keyword '${keyword}'.`);
 };
 
-const sync = (content: string, key: string): void => {
+const sync = async (content: string, key: string): Promise<void> => {
     const sanitizedContent = DOMPurify?.sanitize(content) || content;
-    chrome.runtime.sendMessage({
-        message: Config.Tag + JSON.stringify({
-            content: sanitizedContent,
-            key,
-        }),
-    }).then((response: any) => {
-        console.log("ABScribe: Received response from background: ", response?.status, response?.message);
-    }).catch((error: any) => {
-        console.warn("ABScribe: Error sending message to background from abscribe-frontend:", error);
+    
+    const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
+        content: sanitizedContent,
+        key,
     });
+
+    try {
+        const response = await sendMessage(message);
+        console.log("ABScribe: Received response from background: ", response?.status, response?.message);
+    } catch (error: any) {
+        console.warn("ABScribe: Error sending message to background from abscribe-frontend:", error);
+    }
 };
 
 const initializeEditorInteraction = async () => {
@@ -141,13 +148,13 @@ const initializeEditorInteraction = async () => {
     }
 
     if (editorTarget) {
-        setInterval(() => {
+        setInterval(async () => {
             const currentHTML = (editorTarget as HTMLTextAreaElement).value !== undefined ?
                 (editorTarget as HTMLTextAreaElement).value :
                 editorTarget.innerHTML;
             const baseContent = stripStego(currentHTML);
             const stegoData = extractStego(currentHTML) || { oid: '' };
-            sync(filterHTML(baseContent) + encode(JSON.stringify(stegoData)), key);
+            await sync(filterHTML(baseContent) + encode(JSON.stringify(stegoData)), key);
         }, 750);
         console.log('ABScribe: Editor sync interval started for target:', editorTarget.tagName);
     }

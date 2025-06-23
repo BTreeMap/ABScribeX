@@ -1,20 +1,14 @@
+import { 
+  MessageTypes, 
+  ClickedElementMessage, 
+  ClickedElementData,
+  createMessage,
+  sendMessage
+} from '@/lib/config';
 import { getDOMPurify } from '@/lib/sanitizer';
-import { Config } from '@/lib/config';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
-
-interface ClickedElementDetails {
-    tagName: string;
-    id?: string;
-    parentId?: string;
-    classId: string;
-    classList: string[];
-    innerHTML: string;
-    textContent: string | null;
-    src?: string;
-    href?: string;
-}
 
 console.log('ABScribe: Capture clicked element script injected.');
 
@@ -37,7 +31,7 @@ document.addEventListener('contextmenu', (event) => {
     const classId = 'x' + generateRandomHexString();
     clickedElement.classList.add(classId);
 
-    const elementDetails: ClickedElementDetails = {
+    const elementDetails: ClickedElementData = {
         tagName: clickedElement.tagName,
         id: clickedElement.id || undefined,
         parentId: namedParent?.id || undefined,
@@ -49,10 +43,11 @@ document.addEventListener('contextmenu', (event) => {
         href: (clickedElement as HTMLAnchorElement).href || undefined,
     };
 
-    chrome.runtime.sendMessage({
-        action: Config.ActionClickedElement,
+    const message = createMessage<ClickedElementMessage>(MessageTypes.CLICKED_ELEMENT, {
         element: elementDetails,
-    }).catch((error: any) => {
+    });
+
+    sendMessage(message).catch((error: any) => {
         console.warn('ABScribe: Error sending clicked element to background:', error);
     });
 }, true);
