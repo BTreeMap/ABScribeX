@@ -17,10 +17,10 @@ import {
     SanitizationResponse,
     TextExtractionResponse
 } from '@/lib/config';
+import { generateIdentifier } from '@/lib/generateIdentifier'
 
 // Global state management
 let offscreenDocumentReady = false;
-let requestCounter = 0;
 
 /**
  * Check if we're in a service worker environment
@@ -80,7 +80,7 @@ async function ensureOffscreenDocument(): Promise<void> {
 async function sanitizeInOffscreen(html: string, options?: any): Promise<string> {
     await ensureOffscreenDocument();
 
-    const requestId = `sanitize_${++requestCounter}`;
+    const requestId = generateIdentifier('sanitize-');
     const message = createMessage<SanitizeHTMLMessage>(MessageTypes.SANITIZE_HTML, {
         id: requestId,
         html,
@@ -102,7 +102,7 @@ async function sanitizeInOffscreen(html: string, options?: any): Promise<string>
 async function extractTextInOffscreen(html: string): Promise<string> {
     await ensureOffscreenDocument();
 
-    const requestId = `extract_${++requestCounter}`;
+    const requestId = generateIdentifier('extract-');
     const message = createMessage<ExtractTextMessage>(MessageTypes.EXTRACT_TEXT, {
         id: requestId,
         html
