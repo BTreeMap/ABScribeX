@@ -116,6 +116,7 @@ export default defineBackground(() => {
                       // Content is already sanitized in background script
                       elem.innerHTML = sanitizedHtmlContent;
                     }
+                    console.log("Background script: Content updated for element with classId:", elementClassId);
                   } else {
                     console.warn("Background script: Target element not found on page with classId:", elementClassId);
                   }
