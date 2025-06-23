@@ -113,22 +113,39 @@ const initializeEditorInteraction = async () => {
     const existingStegoData = extractStego(initialContent);
     const extractedOid = existingStegoData?.oid;
 
-    // If we found an oid in the stego data, update the URL fragment
-    if (extractedOid && extractedOid !== '') {
-        const currentUrl = new URL(location.href);
+    const oid: string = await (async (): Promise<string> => {
+        // If we found an oid in the stego data, update the URL fragment
+        if (typeof extractedOid === 'string' && extractedOid.length > 0) {
+            const currentUrl = new URL(location.href);
 
-        // Set hash directly to /document/{oid}
-        currentUrl.hash = `/document/${extractedOid}`;
+            // Set hash directly to /document/{oid}
+            currentUrl.hash = `/document/${extractedOid}`;
 
-        console.log(`ABScribe: Found oid in stego data: ${extractedOid}, updating URL to: ${currentUrl.href}`);
-        window.history.replaceState(null, '', currentUrl.href);
-    }
+            console.log(`ABScribe: Found oid in stego data: ${extractedOid}, updating URL to: ${currentUrl.href}`);
+            window.history.replaceState(null, '', currentUrl.href);
+
+            return extractedOid
+        }
+        else {
+            // Create a new document if no oid is found
+            console.log('ABScribe: No oid found in stego data, creating a new document.');
+            trigger('try');
+            await sleep(1000);
+            const currentUrl = new URL(location.href);
+            const newOid = currentUrl.hash.match(/\/document\/([^/]+)/)?.[1];
+            if (!newOid) {
+                console.error('ABScribe: Failed to create a new document, no oid found in URL hash.');
+                return '';
+            }
+            console.log(`ABScribe: New document created with oid: ${newOid}`);
+            return newOid;
+        }
+    })()
+
 
     let editorTarget: HTMLElement | null = document.getElementById('editor-container');
 
     if (!editorTarget) {
-        trigger('try');
-        await sleep(1000);
         let attempts = 0;
         while (attempts < 10) {
             const iframe = document.querySelector('iframe[id^="tiny-"]') as HTMLIFrameElement | null;
@@ -155,9 +172,7 @@ const initializeEditorInteraction = async () => {
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     } else {
-        // Preserve the existing oid if found, otherwise use empty string
-        const oidToUse = extractedOid || '';
-        editorTarget.innerHTML = sanitizedInitialContent + encode(JSON.stringify({ oid: oidToUse }));
+        editorTarget.innerHTML = sanitizedInitialContent;
     }
 
     if (editorTarget) {
@@ -166,7 +181,7 @@ const initializeEditorInteraction = async () => {
                 (editorTarget as HTMLTextAreaElement).value :
                 editorTarget.innerHTML;
             const baseContent = stripStego(currentHTML);
-            const stegoData = extractStego(currentHTML) || { oid: '' };
+            const stegoData = extractStego(currentHTML) || { oid: oid };
             const filteredContent = await filterHTML(baseContent);
             await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
         }, 750);
