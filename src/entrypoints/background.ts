@@ -83,6 +83,7 @@ export default defineBackground(() => {
 
           console.log("Background: Received sync content message: ", { content, key });
           const value = mapTab.get(key);
+          console.log("Background: Retrieved mapTab entry for key:", key, value);
 
           if (value && value.tabId && content !== undefined) {
             const { tabId, target } = value;
