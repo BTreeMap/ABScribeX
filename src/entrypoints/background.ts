@@ -123,8 +123,8 @@ export default defineBackground(() => {
             );
             console.log("Background: Content modification script executed.");
             // Clean up stored data and map entry using ContentStorage utility
-            await ContentStorage.removeContent(key);
-            mapTab.delete(key);
+            // await ContentStorage.removeContent(key);
+            // mapTab.delete(key);
 
             const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {
               status: "success",
