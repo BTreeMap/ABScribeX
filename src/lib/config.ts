@@ -5,12 +5,12 @@ export const MessageTypes = {
     // Content script to background messages
     CLICKED_ELEMENT: 'abscribe_clicked_element',
     SYNC_CONTENT: 'abscribe_sync_content',
-    
+
     // Service worker to offscreen document messages
     SANITIZE_HTML: 'abscribe_sanitize_html',
     EXTRACT_TEXT: 'abscribe_extract_text',
     PING_OFFSCREEN: 'abscribe_ping_offscreen',
-    
+
     // Response types
     SUCCESS: 'abscribe_success',
     ERROR: 'abscribe_error',
@@ -112,7 +112,7 @@ export interface ClickedElementData {
 /**
  * Union type for all possible messages
  */
-export type ExtensionMessage = 
+export type ExtensionMessage =
     | ClickedElementMessage
     | SyncContentMessage
     | SanitizeHTMLMessage

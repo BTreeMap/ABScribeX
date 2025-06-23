@@ -1,9 +1,9 @@
-import { 
-  MessageTypes, 
-  ClickedElementMessage, 
-  ClickedElementData,
-  createMessage,
-  sendMessage
+import {
+    MessageTypes,
+    ClickedElementMessage,
+    ClickedElementData,
+    createMessage,
+    sendMessage
 } from '@/lib/config';
 import { getDOMPurify } from '@/lib/sanitizer';
 import { generateRandomHexString } from '@/lib/generateRandomHexString';

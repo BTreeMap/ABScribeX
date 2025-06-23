@@ -1,6 +1,6 @@
-import { 
-  MessageTypes, 
-  ClickedElementMessage, 
+import {
+  MessageTypes,
+  ClickedElementMessage,
   SyncContentMessage,
   ResponseMessage,
   ClickedElementData,
@@ -74,7 +74,7 @@ export default defineBackground(() => {
     async (request: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
       if (request.type === MessageTypes.SYNC_CONTENT) {
         const syncMessage = request as SyncContentMessage;
-        
+
         try {
           const { content, key } = syncMessage;
 
@@ -122,7 +122,7 @@ export default defineBackground(() => {
             // Clean up stored data and map entry
             await chrome.storage.local.remove(`popupData_${key}`);
             mapTab.delete(key);
-            
+
             const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {
               status: "success",
               message: "Content updated."

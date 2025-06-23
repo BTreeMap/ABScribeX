@@ -1,10 +1,10 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
-import { 
-  MessageTypes, 
-  SyncContentMessage, 
-  createMessage, 
-  sendMessage 
+import {
+    MessageTypes,
+    SyncContentMessage,
+    createMessage,
+    sendMessage
 } from '@/lib/config';
 import { getDOMPurify } from '@/lib/sanitizer';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
@@ -66,7 +66,7 @@ const trigger = (keyword: string): void => {
 
 const sync = async (content: string, key: string): Promise<void> => {
     const sanitizedContent = DOMPurify?.sanitize(content) || content;
-    
+
     const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
         content: sanitizedContent,
         key,

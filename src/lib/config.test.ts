@@ -1,32 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  MessageTypes, 
-  createMessage, 
-  sendMessage,
-  ClickedElementMessage,
-  SyncContentMessage 
+import {
+    MessageTypes,
+    createMessage,
+    sendMessage,
+    ClickedElementMessage,
+    SyncContentMessage
 } from './config';
 
 describe('MessageTypes', () => {
     it('should have all required message types defined', () => {
         expect(typeof MessageTypes.CLICKED_ELEMENT).toBe('string');
         expect(MessageTypes.CLICKED_ELEMENT).toBeTruthy();
-        
+
         expect(typeof MessageTypes.SYNC_CONTENT).toBe('string');
         expect(MessageTypes.SYNC_CONTENT).toBeTruthy();
-        
+
         expect(typeof MessageTypes.SANITIZE_HTML).toBe('string');
         expect(MessageTypes.SANITIZE_HTML).toBeTruthy();
-        
+
         expect(typeof MessageTypes.EXTRACT_TEXT).toBe('string');
         expect(MessageTypes.EXTRACT_TEXT).toBeTruthy();
-        
+
         expect(typeof MessageTypes.PING_OFFSCREEN).toBe('string');
         expect(MessageTypes.PING_OFFSCREEN).toBeTruthy();
-        
+
         expect(typeof MessageTypes.SUCCESS).toBe('string');
         expect(MessageTypes.SUCCESS).toBeTruthy();
-        
+
         expect(typeof MessageTypes.ERROR).toBe('string');
         expect(MessageTypes.ERROR).toBeTruthy();
     });
