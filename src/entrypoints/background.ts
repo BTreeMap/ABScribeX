@@ -93,26 +93,29 @@ export default defineBackground(() => {
               sendResponse({ status: "error", message: "Target element info missing." });
               return true; // Indicate async response
             }
+            // Pre-sanitize content in background script where DOMPurify is available
+            const sanitizedContent = sanitizeHTML(content);
+
+            // For textareas, we need to extract text content from HTML
+            const textOnlyContent = (() => {
+              const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
+              const div = document.createElement('div');
+              div.innerHTML = sanitizeHTML(htmlWithLineBreaks);
+              return div.textContent || '';
+            })();
+
             await chrome.scripting.executeScript(
               {
                 target: { tabId: tabId },
-                args: [content, target.classId, target.tagName],
-                func: (scriptContent: string, elementClassId: string, elementTagName: string) => {
-                  const textOnly = (html: string): string => {
-                    const htmlWithLineBreaks = html.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
-                    const div = document.createElement('div');
-                    // IMPORTANT: Content here is from the popup, ensure it's sanitized before innerHTML
-                    div.innerHTML = DOMPurify.sanitize(htmlWithLineBreaks);
-                    return div.textContent || '';
-                  };
-
+                args: [sanitizedContent, textOnlyContent, target.classId, target.tagName],
+                func: (sanitizedHtmlContent: string, textContent: string, elementClassId: string, elementTagName: string) => {
                   const elem = document.querySelector(`.${elementClassId}`) as HTMLElement | HTMLTextAreaElement;
                   if (elem) {
                     if (elementTagName.toLowerCase() === 'textarea') {
-                      (elem as HTMLTextAreaElement).value = textOnly(scriptContent);
+                      (elem as HTMLTextAreaElement).value = textContent;
                     } else {
-                      // Content from popup should be sanitized before injection
-                      elem.innerHTML = DOMPurify.sanitize(scriptContent);
+                      // Content is already sanitized in background script
+                      elem.innerHTML = sanitizedHtmlContent;
                     }
                   } else {
                     console.warn("Background script: Target element not found on page with classId:", elementClassId);
