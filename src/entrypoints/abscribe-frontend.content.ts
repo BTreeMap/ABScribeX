@@ -82,7 +82,7 @@ const initializeEditorInteraction = async () => {
     const existingStegoData = extractStego(initialContent);
     const extractedOid = existingStegoData?.oid;
 
-    const oid: string = await (async (): Promise<string> => {
+    const [oid, shouldOverwrite]: [string, boolean] = await (async (): Promise<[string, boolean]> => {
         // If we found an oid in the stego data, update the URL fragment
         if (typeof extractedOid === 'string' && extractedOid.length > 0) {
             const currentUrl = new URL(location.href);
@@ -100,7 +100,16 @@ const initializeEditorInteraction = async () => {
                 console.log(`ABScribe: Oid already matches URL hash: ${currentUrl.hash}`);
             }
 
-            return extractedOid
+            // Ask user if they want to overwrite the existing content
+            const shouldOverwriteChoice = await showChoiceDialog(extractedOid);
+
+            if (shouldOverwriteChoice) {
+                console.log('ABScribe: User chose to overwrite - will load cloud content into editor');
+            } else {
+                console.log('ABScribe: User chose not to overwrite - will keep current page content');
+            }
+
+            return [extractedOid, shouldOverwriteChoice];
         }
         else {
             // Create a new document if no oid is found
@@ -111,12 +120,12 @@ const initializeEditorInteraction = async () => {
             const newOid = currentUrl.hash.match(/\/document\/([^/]+)/)?.[1];
             if (!newOid) {
                 console.error('ABScribe: Failed to create a new document, no oid found in URL hash.');
-                return '';
+                return ['', true];
             }
             console.log(`ABScribe: New document created with oid: ${newOid}`);
-            return newOid;
+            return [newOid, true]; // Always overwrite for new documents
         }
-    })()
+    })();
 
 
     let editorTarget: HTMLElement | null = document.getElementById('editor-container');
@@ -147,13 +156,15 @@ const initializeEditorInteraction = async () => {
         fallbackTextarea.value = stripStego(initialContent);
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
-    } else {
-        // Sanitize content before setting innerHTML for security
-        const sanitizedContent = await sanitizeHTML(stripStego(initialContent));
-        editorTarget.innerHTML = sanitizedContent;
     }
 
     if (editorTarget) {
+        if (shouldOverwrite) {
+            // Only overwrite if user chose to do so
+            const sanitizedContent = await sanitizeHTML(stripStego(initialContent));
+            editorTarget.innerHTML = sanitizedContent;
+        }
+
         // Performance monitoring for self-adjusting sync frequency
         let performanceMetrics = {
             averageProcessingTime: 0,
@@ -273,6 +284,17 @@ const initializeEditorInteraction = async () => {
             }
         }, 30000); // Log every 30 seconds
     }
+};
+
+const showChoiceDialog = (oid: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+        const result = confirm(
+            `Document ${oid} already exists.\n\n` +
+            `Click OK to overwrite with current page content.\n` +
+            `Click Cancel to keep the existing cloud content.`
+        );
+        resolve(result);
+    });
 };
 
 export default defineContentScript({
