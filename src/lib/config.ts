@@ -4,7 +4,7 @@
 export const MessageTypes = {
     // Content script to background messages
     CLICKED_ELEMENT: 'klagjuvn54uh6ibtrpm0bo6fsgn68vgdl',
-    REQUEST_EDITOR_WINDOW: 'kreqedwin7d49hgucu8ouenjlm8bgdm1b1',
+    REQUEST_EDITOR_WINDOW: 'kr9n1dmuahhflff8dia8sn1kuj2p4f4kt',
 
     // Direct page-helper to abscribe-frontend communication
     SYNC_CONTENT: 'kkv54gn4p049hgucu8ouenjlm8bgdm1b1',
