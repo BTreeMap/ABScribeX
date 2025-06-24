@@ -1,5 +1,6 @@
 import {
   MessageTypes,
+  ContextMenuItemTypes,
   RequestEditorWindowMessage,
   SyncContentMessage,
   ResponseMessage,
@@ -183,7 +184,7 @@ export default defineBackground(() => {
 
   chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
-      id: "abscribex-edit-ert2oljan",
+      id: ContextMenuItemTypes.EDIT_WITH_ABSCRIBE,
       title: "Edit with ABScribe",
       contexts: ["editable"]
     });
@@ -191,7 +192,7 @@ export default defineBackground(() => {
 
   // Context menu is still needed to trigger the page-helper flow
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
-    if (info.menuItemId === "abscribex-edit-ert2oljan") {
+    if (info.menuItemId === ContextMenuItemTypes.EDIT_WITH_ABSCRIBE) {
       console.log("ABScribe: Context menu clicked - page-helper will handle the element selection.");
       // The actual handling is now done by page-helper.content.ts
       // which will send a REQUEST_EDITOR_WINDOW message when an element is selected

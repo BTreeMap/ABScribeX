@@ -18,6 +18,10 @@ export const MessageTypes = {
     ERROR: 'ktpsfphjd2q6n4m82dt5fpooapi9j2tkn',
 } as const;
 
+export const ContextMenuItemTypes = {
+    EDIT_WITH_ABSCRIBE: 'kt9kj30qu6s9ddr1bnhplksudvktg6o0e',
+}
+
 /**
  * Rich content type that tracks content state, element context, and sanitization options
  * Can contain either sanitized or unsanitized content - check isSanitized flag
