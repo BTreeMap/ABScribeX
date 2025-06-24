@@ -3,6 +3,7 @@
  */
 
 import type { DOMUpdateOptions, ElementInfo } from '@/lib/domUtils';
+import type { ContentWithMetadata, SanitizationOptions } from '@/lib/sanitizer';
 
 declare global {
     interface Window {
@@ -39,8 +40,15 @@ declare global {
 
                 // Utility functions
                 stripStego: (html: string) => string;
-                sanitizeHTML: (html: string, options?: any) => Promise<string>;
+                sanitizeHTML: {
+                    (input: string, options?: SanitizationOptions): Promise<string>;
+                    (input: ContentWithMetadata, options?: SanitizationOptions): Promise<ContentWithMetadata>;
+                };
                 extractTextFromHTML: (html: string) => Promise<string>;
+
+                // Content metadata helpers
+                createContentWithMetadata: (content: string, elementType?: string, isSanitized?: boolean, dompurifyOptions?: any) => ContentWithMetadata;
+                isContentWithMetadata: (input: any) => input is ContentWithMetadata;
             };
             utils: {
                 generateIdentifier: (prefix?: string) => string;

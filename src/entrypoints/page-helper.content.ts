@@ -79,23 +79,7 @@ export default defineContentScript({
 
             // Content processing utilities
             stripStego,
-            sanitizeHTML: async (input: any, options?: any) => {
-                try {
-                    if (isContentWithMetadata(input)) {
-                        const result = await sanitizeHTML(input, options);
-                        return isContentWithMetadata(result) ? result.content : result;
-                    } else {
-                        return await sanitizeHTML(input as string, options);
-                    }
-                } catch (error) {
-                    console.error('ABScribe: Error sanitizing HTML:', error);
-                    if (typeof input === 'string') {
-                        return input.replace(/<[^>]*>/g, '');
-                    } else {
-                        return input.content.replace(/<[^>]*>/g, '');
-                    }
-                }
-            },
+            sanitizeHTML: sanitizeHTML, // Expose the full overloaded API directly
             extractTextFromHTML: async (html: string) => {
                 try {
                     return await extractTextFromHTML(html);
@@ -103,7 +87,11 @@ export default defineContentScript({
                     console.error('ABScribe: Error extracting text:', error);
                     return html.replace(/<[^>]*>/g, '');
                 }
-            }
+            },
+
+            // Content metadata helpers
+            createContentWithMetadata,
+            isContentWithMetadata
         };
 
         // Populate global utilities
