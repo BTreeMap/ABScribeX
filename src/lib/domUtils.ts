@@ -10,6 +10,7 @@ export interface DOMUpdateOptions {
     triggerEvents?: boolean;
     preserveSelection?: boolean;
     batchUpdates?: boolean;
+    setCursorAtEnd?: boolean; // Controls cursor positioning in contentEditable elements - defaults to false for better UX
 }
 
 export interface ElementInfo {

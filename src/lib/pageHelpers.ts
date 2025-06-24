@@ -174,7 +174,11 @@ export function createPageHelpers(context?: BrowserContext) {
             }
 
             element.innerHTML = content;
-            setCursorAtEnd(element);
+            
+            // Only set cursor at end if explicitly requested (defaults to false for better UX)
+            if (options.setCursorAtEnd === true) {
+                setCursorAtEnd(element);
+            }
 
             if (options.triggerEvents !== false) {
                 triggerFrameworkEvents(element);
@@ -205,7 +209,11 @@ export function createPageHelpers(context?: BrowserContext) {
         }
 
         element.innerHTML = content;
-        setCursorAtEnd(element);
+        
+        // Only set cursor at end if explicitly requested (defaults to false for better UX)
+        if (options.setCursorAtEnd === true) {
+            setCursorAtEnd(element);
+        }
 
         if (options.triggerEvents !== false) {
             triggerFrameworkEvents(element);
