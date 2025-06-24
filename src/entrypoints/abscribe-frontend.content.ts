@@ -41,15 +41,6 @@ const filterNodes = (node: Element): void => {
     }
 };
 
-/**
- * Filters HTML content to only allow specific tags
- */
-const filterHTML = async (htmlContent: string): Promise<string> => {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = await sanitizeHTML(htmlContent);
-    filterNodes(tempDiv);
-    return tempDiv.innerHTML;
-};
 
 const trigger = (keyword: string): void => {
     const buttons = document.querySelectorAll('button');
@@ -106,8 +97,8 @@ const initializeEditorInteraction = async () => {
         console.error('ABScribe: Failed to retrieve content from ContentStorage.', e);
         initialContent = '<p>Error retrieving content.</p>';
     }
-
-    const sanitizedInitialContent = await filterHTML(initialContent);
+    // The initial content is already sanitized in the background script
+    console.log('ABScribe: Initial content loaded, length:', initialContent.length);
 
     // Extract existing stego data from the initial content to check for an oid
     const existingStegoData = extractStego(initialContent);
@@ -175,11 +166,11 @@ const initializeEditorInteraction = async () => {
         const fallbackTextarea = document.createElement('textarea');
         fallbackTextarea.style.width = '95%';
         fallbackTextarea.style.height = '300px';
-        fallbackTextarea.value = stripStego(sanitizedInitialContent);
+        fallbackTextarea.value = stripStego(initialContent);
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     } else {
-        editorTarget.innerHTML = stripStego(sanitizedInitialContent);
+        editorTarget.innerHTML = stripStego(initialContent);
     }
 
     if (editorTarget) {
@@ -265,7 +256,7 @@ const initializeEditorInteraction = async () => {
                     editorTarget.innerHTML;
                 const baseContent = currentHTML;
                 const stegoData = { oid: oid };
-                const filteredContent = await filterHTML(baseContent);
+                const filteredContent = await sanitizeHTML(baseContent);
                 await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
 
                 const processingTime = performance.now() - startTime;
@@ -286,6 +277,11 @@ const initializeEditorInteraction = async () => {
             syncIntervalId = setInterval(syncContent, currentSyncInterval);
             console.log(`ABScribe: Editor sync interval started at ${currentSyncInterval}ms for target:`, editorTarget.tagName);
         };
+
+        // Initial sync to load content
+        syncContent().catch(error => {
+            console.error('ABScribe: Initial sync failed:', error);
+        });
 
         // Start the sync interval
         startSyncInterval();
