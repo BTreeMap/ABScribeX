@@ -20,6 +20,7 @@
  */
 
 import { createDOMUtils, type DOMUpdateOptions, type BrowserContext } from '@/lib/domUtils';
+import { sleep } from '@/lib/utils';
 
 /**
  * Factory function to create context-aware helper instances using closure pattern
@@ -78,9 +79,6 @@ export function createPageHelpers(context?: BrowserContext) {
         return namedParent;
     };
 
-    const sleep = (ms: number): Promise<void> => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    };
 
     const waitForGlobal = <T>(globalName: string, checkInterval: number = 10): Promise<T> => {
         return new Promise<T>((resolve) => {

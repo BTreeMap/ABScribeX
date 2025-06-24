@@ -10,12 +10,9 @@ import {
 import { sanitizeHTML } from '@/lib/sanitizer';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings, savePerformanceMetrics, PerformanceMetrics } from '@/lib/settings';
+import { sleep } from '@/lib/utils';
 
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
-
-function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 // HTML tag allowlist filtering (from legacy implementation)
 const allowedTags = new Set(['div', 'p', 'span', 'br']);

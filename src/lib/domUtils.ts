@@ -5,6 +5,7 @@
  */
 
 import { logError, withPerformanceMonitoring, logPerformance } from '@/lib/errorHandler';
+import { sleep } from '@/lib/utils';
 
 export interface DOMUpdateOptions {
     focusAfterUpdate?: boolean;
@@ -372,7 +373,7 @@ export function createDOMUtils(context?: BrowserContext) {
             }
 
             if (attempt < maxAttempts - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay));
+                await sleep(delay);
             }
         }
 

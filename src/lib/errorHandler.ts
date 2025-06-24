@@ -2,6 +2,8 @@
  * Centralized error handling and performance monitoring for ABScribeX
  */
 
+import { sleep } from '@/lib/utils';
+
 export interface ErrorContext {
     operation: string;
     component: string;
@@ -148,7 +150,7 @@ export async function withRetry<T>(
             const delay = baseDelay * Math.pow(2, attempt);
             console.warn(`ABScribeX Retry [${component}:${operationName}] Attempt ${attempt + 1}/${maxRetries + 1} failed, retrying in ${delay}ms`);
 
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await sleep(delay);
         }
     }
 
