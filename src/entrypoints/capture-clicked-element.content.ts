@@ -44,6 +44,7 @@ export default defineContentScript({
                 classList: Array.from(clickedElement.classList),
                 innerHTML: sanitizedInnerHTML,
                 textContent: clickedElement.textContent,
+                value: (clickedElement as HTMLInputElement | HTMLTextAreaElement).value || undefined,
                 src: (clickedElement as HTMLImageElement | HTMLMediaElement).src || undefined,
                 href: (clickedElement as HTMLAnchorElement).href || undefined,
             };

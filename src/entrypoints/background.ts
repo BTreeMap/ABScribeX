@@ -51,11 +51,16 @@ export default defineBackground(() => {
       });
 
       let content = lastClickedElement?.innerHTML || '';
-      if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
-        content = content.replace(/\n/g, '<br/>');
-      }
-      const sanitizedContent = await sanitizeHTML(content);
+      let sanitizedContent: string;
 
+      if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
+        // For textarea, use the value property directly without HTML sanitization
+        content = lastClickedElement.value || '';
+        sanitizedContent = content.replace(/\n/g, '<br/>');
+      } else {
+        sanitizedContent = await sanitizeHTML(content);
+      }
+      console.log("ABScribe: Sanitized content for popup, content length:", sanitizedContent.length);
       // Store content in chrome.ContentStorage.local instead of URL params
       await ContentStorage.storeContent(key, sanitizedContent);
 

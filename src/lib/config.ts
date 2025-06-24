@@ -105,6 +105,7 @@ export interface ClickedElementData {
     classList: string[];
     innerHTML: string;
     textContent: string | null;
+    value?: string;
     src?: string;
     href?: string;
 }
