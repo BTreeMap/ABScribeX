@@ -52,8 +52,10 @@ export default defineContentScript({
             };
         }
 
+        const ABScribeX = window.ABScribeX!;
+
         // Populate the global DOM utilities object
-        window.ABScribeX.dom = {
+        ABScribeX.dom = {
             // Element detection and information
             getElementInfo: pageHelpers.getElementInfo,
             isEditable: pageHelpers.isEditable,
@@ -95,7 +97,7 @@ export default defineContentScript({
         };
 
         // Populate global utilities
-        window.ABScribeX.utils = {
+        ABScribeX.utils = {
             generateIdentifier,
             sleep: pageHelpers.sleep,
             createMessage: (type: string, data: any) => createMessage(type as any, data),
@@ -109,7 +111,8 @@ export default defineContentScript({
             }
         };
 
-        console.log('ABScribe: Global Helper Functions Initialized', window.ABScribeX);
+
+        console.log('ABScribe: Global Helper Functions Initialized', ABScribeX);
 
         // Listen for SYNC_CONTENT messages directed to this page
         chrome.runtime.onMessage.addListener(
@@ -135,7 +138,7 @@ export default defineContentScript({
                             }
 
                             // Ensure ABScribeX is available
-                            if (!window.ABScribeX?.dom) {
+                            if (!ABScribeX.dom) {
                                 console.error('ABScribe PageHelper: Global DOM utilities not available');
                                 const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
                                     status: "error",
@@ -151,10 +154,10 @@ export default defineContentScript({
 
                             // For textareas, we need to extract text content from HTML
                             const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
-                            const textOnlyContent = await window.ABScribeX.dom.extractTextFromHTML(htmlWithLineBreaks);
+                            const textOnlyContent = await ABScribeX.dom.extractTextFromHTML(htmlWithLineBreaks);
 
                             // Use global DOM utilities to update the element
-                            window.ABScribeX.dom.updateElement(targetElement, sanitizedContent, textOnlyContent);
+                            ABScribeX.dom.updateElement(targetElement, sanitizedContent, textOnlyContent);
 
                             console.log(`ABScribe PageHelper: Successfully updated element for editorId: ${editorId}`);
 
@@ -180,7 +183,7 @@ export default defineContentScript({
 
         // Wait for global DOM utilities to be available (for other scripts)
         const waitForABScribeX = () => {
-            return pageHelpers.waitForGlobal<typeof window.ABScribeX>('ABScribeX');
+            return pageHelpers.waitForGlobal<typeof ABScribeX>('ABScribeX');
         };
 
         // Helper function to find the highest editable element in the hierarchy
@@ -191,7 +194,7 @@ export default defineContentScript({
             // Traverse up to find the highest editable element
             while (current.parentElement) {
                 current = current.parentElement;
-                if (window.ABScribeX?.dom?.isEditable(current)) {
+                if (ABScribeX.dom?.isEditable(current)) {
                     highestEditable = current;
                 }
             }
@@ -208,8 +211,6 @@ export default defineContentScript({
 
                     const clickedElement = event.target as HTMLElement;
                     if (!clickedElement || typeof clickedElement.tagName !== 'string') return;
-
-                    const ABScribeX = window.ABScribeX!;
 
                     // Use global DOM utility to check if element is editable
                     if (!ABScribeX.dom.isEditable(clickedElement)) {
@@ -290,7 +291,7 @@ export default defineContentScript({
 
         // Dispatch a custom event to signal that ABScribeX is ready
         window.dispatchEvent(new CustomEvent('ABScribeXReady', {
-            detail: { version: window.ABScribeX.version }
+            detail: { version: ABScribeX.version }
         }));
     }
 });
