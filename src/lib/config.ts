@@ -102,6 +102,7 @@ export interface ClickedElementData {
     id?: string;
     parentId?: string;
     classId: string;
+    highestPriorityClassId: string;
     classList: string[];
     innerHTML: string;
     textContent: string | null;

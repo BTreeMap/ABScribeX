@@ -33,6 +33,21 @@ export default defineContentScript({
             const classId = generateIdentifier('abscribex-');
             clickedElement.classList.add(classId);
 
+            // Find the highest priority class ID by traversing up the DOM hierarchy
+            let highestPriorityClassId = classId;
+            let currentElement: HTMLElement | null = clickedElement;
+
+            while (currentElement) {
+                const abscribeClasses = Array.from(currentElement.classList)
+                    .filter(className => className.startsWith('abscribex-'));
+
+                if (abscribeClasses.length > 0) {
+                    highestPriorityClassId = abscribeClasses[0];
+                }
+
+                currentElement = currentElement.parentElement;
+            }
+
             // Sanitize HTML content using the cross-environment sanitizer
             const sanitizedInnerHTML = await sanitizeHTML(clickedElement.innerHTML);
 
@@ -41,6 +56,7 @@ export default defineContentScript({
                 id: clickedElement.id || undefined,
                 parentId: namedParent?.id || undefined,
                 classId,
+                highestPriorityClassId,
                 classList: Array.from(clickedElement.classList),
                 innerHTML: sanitizedInnerHTML,
                 textContent: clickedElement.textContent,
