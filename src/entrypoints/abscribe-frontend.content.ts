@@ -191,7 +191,7 @@ const initializeEditorInteraction = async () => {
             lastAdjustment: Date.now()
         };
 
-        let currentSyncInterval = settings.syncInterval || 250; // Default to 250ms if not set
+        let currentSyncInterval = Math.max(settings.syncInterval || 250, 200); // Default to 250ms, but never below 200ms
         let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
         const measurePerformance = (processingTime: number): void => {
@@ -219,11 +219,14 @@ const initializeEditorInteraction = async () => {
 
             if (avgProcessingTime > 0 && performanceMetrics.measurements.length >= 5) {
                 const idealInterval = Math.max(avgProcessingTime / targetProcessingRatio, 100); // Min 100ms
-                const maxInterval = Math.max(settings.syncInterval * 2, 1000); // Max 2x setting or 1000ms
-                const minInterval = Math.max(settings.syncInterval * 0.5, 100); // Min 0.5x setting or 100ms
+                const maxInterval = Math.max(settings.syncInterval * 2, 2000); // Max 2x setting or 2000ms
+                const minInterval = Math.max(settings.syncInterval * 0.5, 200); // Min 0.5x setting or 200ms (prevent flashing)
 
                 let newInterval = Math.min(Math.max(idealInterval, minInterval), maxInterval);
                 newInterval = Math.round(newInterval / 50) * 50; // Round to nearest 50ms
+
+                // Additional check: never go below 200ms to prevent screen flashing and high CPU usage
+                newInterval = Math.max(newInterval, 200);
 
                 if (Math.abs(newInterval - currentSyncInterval) > 50) {
                     console.log(`ABScribe: Adjusting sync interval from ${currentSyncInterval}ms to ${newInterval}ms (avg processing: ${avgProcessingTime.toFixed(1)}ms)`);

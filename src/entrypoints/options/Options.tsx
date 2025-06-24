@@ -131,15 +131,15 @@ function Options() {
             <input
               type="number"
               id="syncInterval"
-              min="100"
+              min="200"
               max="5000"
               step="50"
               value={settings.syncInterval}
               onChange={(e) => handleInputChange('syncInterval', parseInt(e.target.value))}
             />
             <small>
-              How often to sync content with the editor (100-5000ms).
-              Lower values provide better responsiveness but use more resources.
+              How often to sync content with the editor (200-5000ms).
+              Minimum 200ms to prevent screen flashing and high CPU usage.
               The extension will auto-adjust this value based on performance.
             </small>
           </div>
@@ -153,6 +153,7 @@ function Options() {
                 <li><strong>500ms</strong> - Balanced performance</li>
                 <li><strong>1000ms</strong> - Slower devices or poor network</li>
               </ul>
+              <p><strong>Note:</strong> Minimum 200ms enforced to prevent screen flashing and excessive CPU usage.</p>
 
               {performanceMetrics && (
                 <div className="current-performance">
