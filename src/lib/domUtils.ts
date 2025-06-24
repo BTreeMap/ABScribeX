@@ -202,7 +202,7 @@ export const updateContentEditable = withPerformanceMonitoring(
         const {
             focusAfterUpdate = true,
             triggerEvents = true,
-            preserveSelection = true,
+            preserveSelection = false,
             batchUpdates = true
         } = options;
 
