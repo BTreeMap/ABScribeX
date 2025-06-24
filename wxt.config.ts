@@ -42,7 +42,7 @@ export default defineConfig({
       "offscreen"
     ],
     content_security_policy: {
-      extension_pages: "script-src 'self'; object-src 'self'; connect-src 'self' https://abtestingtools-frontend.up.railway.app;"
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://abtestingtools-frontend.up.railway.app;"
     },
     action: {
       default_popup: 'popup/index.html',
