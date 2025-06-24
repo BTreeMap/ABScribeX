@@ -9,6 +9,7 @@ import {
     createStorage,
     ContentStorage
 } from './config';
+import { createContentWithMetadata } from './sanitizer';
 
 describe('MessageTypes', () => {
     it('should have all required message types defined', () => {
@@ -56,27 +57,31 @@ describe('MessageTypes', () => {
     });
 
     it('should create a valid REQUEST_EDITOR_WINDOW message', () => {
+        const testContent = createContentWithMetadata('<p>Test content</p>', 'div', true);
         const message = createMessage<RequestEditorWindowMessage>(MessageTypes.REQUEST_EDITOR_WINDOW, {
             editorId: 'abscribex-test-123',
-            content: '<p>Test content</p>'
+            content: testContent
         });
 
         expect(message.type).toBe(MessageTypes.REQUEST_EDITOR_WINDOW);
         expect(message.timestamp).toBeTypeOf('number');
         expect(message.editorId).toBe('abscribex-test-123');
-        expect(message.content).toBe('<p>Test content</p>');
+        expect(message.content.content).toBe('<p>Test content</p>');
+        expect(message.content.isSanitized).toBe(true);
     });
 
     it('should create a valid SYNC_CONTENT message with editorId', () => {
+        const testContent = createContentWithMetadata('<p>Updated content</p>', 'textarea', true);
         const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
             editorId: 'abscribex-test-456',
-            content: '<p>Updated content</p>'
+            content: testContent
         });
 
         expect(message.type).toBe(MessageTypes.SYNC_CONTENT);
         expect(message.timestamp).toBeTypeOf('number');
         expect(message.editorId).toBe('abscribex-test-456');
-        expect(message.content).toBe('<p>Updated content</p>');
+        expect(message.content.content).toBe('<p>Updated content</p>');
+        expect(message.content.isSanitized).toBe(true);
     });
 });
 

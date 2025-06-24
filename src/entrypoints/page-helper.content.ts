@@ -150,10 +150,10 @@ export default defineContentScript({
 
                             // Pre-sanitize content using the global sanitizer
                             // Content coming from background is already sanitized, so use it directly
-                            const sanitizedContent = content; // Already sanitized by background script
+                            const sanitizedContent = content.content; // Extract content string from ContentWithMetadata
 
                             // For textareas, we need to extract text content from HTML
-                            const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
+                            const htmlWithLineBreaks = content.content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
                             const textOnlyContent = await ABScribeX.dom.extractTextFromHTML(htmlWithLineBreaks);
 
                             // Use global DOM utilities to update the element
@@ -263,7 +263,7 @@ export default defineContentScript({
                     // Send REQUEST_EDITOR_WINDOW message to background
                     const message = ABScribeX.utils.createMessage(MessageTypes.REQUEST_EDITOR_WINDOW, {
                         editorId,
-                        content: contentWithMetadata.content  // Send the actual content string
+                        content: contentWithMetadata  // Send the full ContentWithMetadata object
                     }) as RequestEditorWindowMessage;
 
                     console.log('ABScribe: Requesting editor window for editorId:', editorId);

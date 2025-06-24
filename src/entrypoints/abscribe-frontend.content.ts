@@ -5,9 +5,10 @@ import {
     SyncContentMessage,
     createMessage,
     sendMessage,
-    ContentStorage
+    ContentStorage,
+    ContentWithMetadata
 } from '@/lib/config';
-import { sanitizeHTML } from '@/lib/sanitizer';
+import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings, savePerformanceMetrics, PerformanceMetrics } from '@/lib/settings';
 import { sleep } from '@/lib/utils';
@@ -54,8 +55,11 @@ const trigger = (keyword: string): void => {
 const sync = async (content: string, editorId: string): Promise<void> => {
     console.log("ABScribe: Syncing content with editorId:", editorId, "Content length:", content.length);
 
+    // Create ContentWithMetadata for the content (assume it's sanitized since it comes from editor)
+    const contentWithMetadata = createContentWithMetadata(content, undefined, true);
+
     const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
-        content: content,
+        content: contentWithMetadata,
         editorId, // Changed from 'key' to 'editorId'
     });
 
@@ -86,9 +90,9 @@ const initializeEditorInteraction = async () => {
     let initialContent = '<p>Loading content...</p>';
     try {
         // Use the centralized ContentStorage utility to get content
-        const storedContent = await ContentStorage.getContent(editorId);
-        if (typeof storedContent === 'string') {
-            initialContent = storedContent;
+        const storedContentWithMetadata = await ContentStorage.getContent(editorId);
+        if (storedContentWithMetadata) {
+            initialContent = storedContentWithMetadata.content;
         } else {
             console.warn(`ABScribe: Content not found in local ContentStorage for editorId ${editorId}.`);
             initialContent = '<p>Error: No content found.</p>';

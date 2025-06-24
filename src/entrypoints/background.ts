@@ -7,11 +7,12 @@ import {
   ClickedElementData,
   ExtensionMessage,
   createMessage,
-  ContentStorage
+  ContentStorage,
+  ContentWithMetadata
 } from '@/lib/config';
 import { generateIdentifier } from '@/lib/generateIdentifier';
 import { getSettings } from '@/lib/settings';
-import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
+import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
 import { logError, withPerformanceMonitoring, withRetry } from '@/lib/errorHandler';
 
 import { defineBackground } from 'wxt/utils/define-background';
@@ -108,7 +109,13 @@ export default defineBackground(() => {
     );
 
     // Store content using the editorId as the key
-    const sanitizedContent = await sanitizeHTML(content);
+    // Content is already ContentWithMetadata, ensure it's sanitized
+    let sanitizedContent: ContentWithMetadata;
+    if (content.isSanitized) {
+      sanitizedContent = content;
+    } else {
+      sanitizedContent = await sanitizeHTML(content) as ContentWithMetadata;
+    }
     await ContentStorage.storeContent(editorId, sanitizedContent);
 
     // Create editor URL with editorId instead of random key

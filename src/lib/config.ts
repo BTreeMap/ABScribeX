@@ -20,6 +20,19 @@ export const MessageTypes = {
 } as const;
 
 /**
+ * Rich content type that tracks content state, element context, and sanitization options
+ * Can contain either sanitized or unsanitized content - check isSanitized flag
+ */
+export interface ContentWithMetadata {
+    content: string;
+    elementType?: string;
+    isSanitized: boolean;
+    originalLength?: number;
+    sanitizedAt?: number;
+    dompurifyOptions?: any;
+}
+
+/**
  * Base interface for all extension messages
  */
 export interface BaseMessage {
@@ -42,7 +55,7 @@ export interface ClickedElementMessage extends BaseMessage {
 export interface RequestEditorWindowMessage extends BaseMessage {
     type: typeof MessageTypes.REQUEST_EDITOR_WINDOW;
     editorId: string;
-    content: string;
+    content: ContentWithMetadata;
 }
 
 /**
@@ -50,7 +63,7 @@ export interface RequestEditorWindowMessage extends BaseMessage {
  */
 export interface SyncContentMessage extends BaseMessage {
     type: typeof MessageTypes.SYNC_CONTENT;
-    content: string;
+    content: ContentWithMetadata;
     editorId: string; // Changed from 'key' to 'editorId' 
 }
 
@@ -186,10 +199,10 @@ export async function sendMessageToTab<T extends BaseMessage, R = any>(
 /**
  * Storage interface for typed storage instances
  */
-export interface StorageInstance {
+export interface StorageInstance<T = string> {
     contentKey: (key: string) => string;
-    storeContent: (key: string, content: string) => Promise<void>;
-    getContent: (key: string) => Promise<string | null>;
+    storeContent: (key: string, content: T) => Promise<void>;
+    getContent: (key: string) => Promise<T | null>;
     removeContent: (key: string) => Promise<void>;
     clearAllContent: () => Promise<void>;
 }
@@ -197,7 +210,7 @@ export interface StorageInstance {
 /**
  * Storage factory function to create storage instances with different prefixes
  */
-export function createStorage(prefix: string): StorageInstance {
+export function createStorage<T = string>(prefix: string): StorageInstance<T> {
     return {
         /**
          * Generate storage key for content data
@@ -207,7 +220,7 @@ export function createStorage(prefix: string): StorageInstance {
         /**
          * Store content in chrome.storage.local
          */
-        storeContent: async (key: string, content: string): Promise<void> => {
+        storeContent: async (key: string, content: T): Promise<void> => {
             const storageKey = `${prefix}_${key}`;
             await chrome.storage.local.set({ [storageKey]: { content, timestamp: Date.now() } });
             console.log(`Storage[${prefix}]: Stored content for key ${key} as ${storageKey}`);
@@ -216,7 +229,7 @@ export function createStorage(prefix: string): StorageInstance {
         /**
          * Retrieve content from chrome.storage.local
          */
-        getContent: async (key: string): Promise<string | null> => {
+        getContent: async (key: string): Promise<T | null> => {
             const storageKey = `${prefix}_${key}`;
             const data = await chrome.storage.local.get(storageKey);
 
@@ -255,4 +268,4 @@ export function createStorage(prefix: string): StorageInstance {
 /**
  * Default storage instance for content data
  */
-export const ContentStorage = createStorage('e9hfahco3');
+export const ContentStorage = createStorage<ContentWithMetadata>('e9hfahco3');
