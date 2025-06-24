@@ -13,30 +13,6 @@ import { getSettings, savePerformanceMetrics } from '@/lib/settings';
 import { sleep } from '@/lib/utils';
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
 
-// HTML tag allowlist filtering (from legacy implementation)
-const allowedTags = new Set(['div', 'p', 'span', 'br']);
-
-/**
- * Checks if a tag name is in the allowlist
- */
-const isValidTag = (tagName: string): boolean => {
-    return allowedTags.has(tagName.toLowerCase());
-};
-
-/**
- * Recursively filters HTML nodes to only allow specific tags
- */
-const filterNodes = (node: Element): void => {
-    const childNodes = Array.from(node.children);
-    for (const child of childNodes) {
-        if (!isValidTag(child.tagName)) {
-            node.removeChild(child);
-        } else {
-            filterNodes(child);
-        }
-    }
-};
-
 
 const trigger = (keyword: string): void => {
     const buttons = document.querySelectorAll('button');
