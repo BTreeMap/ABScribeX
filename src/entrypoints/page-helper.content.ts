@@ -5,10 +5,10 @@
  */
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import { 
-    getElementInfo, 
-    updateElement, 
-    updateFormInput, 
+import {
+    getElementInfo,
+    updateElement,
+    updateFormInput,
     updateContentEditable,
     findElementWithRetry,
     batchDOMUpdates,
@@ -19,7 +19,7 @@ import {
 import { generateIdentifier } from '@/lib/generateIdentifier';
 import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
 import { stripStego } from '@/lib/stego';
-import { 
+import {
     MessageTypes,
     ClickedElementMessage,
     ClickedElementData,
@@ -63,7 +63,7 @@ export default defineContentScript({
 
         function findABScribeElement(startElement: HTMLElement): { element: HTMLElement; classId: string } | null {
             let currentElement: HTMLElement | null = startElement;
-            
+
             while (currentElement) {
                 const abscribeClasses = Array.from(currentElement.classList)
                     .filter(className => className.startsWith('abscribex-'));
@@ -98,15 +98,15 @@ export default defineContentScript({
             findElementWithRetry,
             batchDOMUpdates,
             flushDOMBatch,
-            
+
             // Element detection and management
             isEditable,
             addElementClass,
             findABScribeElement,
-            
+
             // Element identification
             generateElementId: generateIdentifier,
-            
+
             // Content processing utilities
             stripStego,
             sanitizeHTML: async (html: string, options?: any) => {
@@ -160,7 +160,7 @@ export default defineContentScript({
 
                 // Listen for the ready event
                 window.addEventListener('ABScribeXReady', () => resolve(), { once: true });
-                
+
                 // Also poll as fallback
                 checkGlobal();
             });
@@ -252,7 +252,7 @@ export default defineContentScript({
         document.addEventListener('contextmenu', handleContextMenu, true);
 
         console.log('ABScribe: Global DOM utilities and element capture initialized successfully');
-        
+
         // Dispatch a custom event to signal that ABScribeX is ready
         window.dispatchEvent(new CustomEvent('ABScribeXReady', {
             detail: { version: window.ABScribeX.version }
