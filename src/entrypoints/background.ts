@@ -19,12 +19,17 @@ import { defineBackground } from 'wxt/utils/define-background';
 export default defineBackground(() => {
   console.log('ABScribe Background Service Worker Loaded.');
 
-  // Track active editor windows to prevent duplicates
-  const activeEditorWindows = new Map<string, number>(); // editorId -> windowId
+  // Enhanced tracking for active editor windows with originating tab information
+  interface EditorWindowInfo {
+    windowId: number;
+    originTabId: number;
+  }
+  
+  const activeEditorWindows = new Map<string, EditorWindowInfo>(); // editorId -> {windowId, originTabId}
 
   /**
-   * Handle SYNC_CONTENT messages by forwarding them to all tabs
-   * so page-helper scripts can decide if they should handle them
+   * Handle SYNC_CONTENT messages by sending them directly to the originating tab
+   * using the tracked window information for efficiency
    */
   const handleSyncContentMessage = async (
     message: SyncContentMessage,
@@ -32,42 +37,36 @@ export default defineBackground(() => {
     sendResponse: (response?: any) => void
   ): Promise<void> => {
     const { editorId } = message;
-    console.log(`Background: Forwarding SYNC_CONTENT message for editorId: ${editorId}`);
+    console.log(`Background: Processing SYNC_CONTENT message for editorId: ${editorId}`);
 
     try {
-      // Get all tabs and send the message to each one
-      const tabs = await chrome.tabs.query({});
-      let responseReceived = false;
-
-      for (const tab of tabs) {
-        if (tab.id) {
-          try {
-            // Send message to tab - only the page-helper managing this editorId will respond
-            const response = await chrome.tabs.sendMessage(tab.id, message);
-            if (response && response.status) {
-              console.log(`Background: Received response from tab ${tab.id}:`, response);
-              if (!responseReceived) {
-                sendResponse(response);
-                responseReceived = true;
-              }
-              break; // Stop once we get a successful response
-            }
-          } catch (error) {
-            // Tab might not have the content script loaded, ignore
-            continue;
-          }
-        }
-      }
-
-      if (!responseReceived) {
+      // Look up the editor window info to get the originating tab
+      const editorInfo = activeEditorWindows.get(editorId);
+      
+      if (!editorInfo) {
         const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
           status: "error",
-          message: `No page-helper found managing editorId: ${editorId}`
+          message: `No active editor found for editorId: ${editorId}`
+        });
+        sendResponse(errorResponse);
+        return;
+      }
+
+      try {
+        // Send message directly to the originating tab - much more efficient than broadcasting
+        const response = await chrome.tabs.sendMessage(editorInfo.originTabId, message);
+        console.log(`Background: Received response from originating tab ${editorInfo.originTabId}:`, response);
+        sendResponse(response);
+      } catch (error) {
+        console.error(`Background: Error sending to originating tab ${editorInfo.originTabId}:`, error);
+        const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+          status: "error",
+          message: `Failed to communicate with originating tab: ${error instanceof Error ? error.message : "Unknown error"}`
         });
         sendResponse(errorResponse);
       }
     } catch (error) {
-      console.error(`Background: Error forwarding SYNC_CONTENT message:`, error);
+      console.error(`Background: Error processing SYNC_CONTENT message:`, error);
       const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
         status: "error",
         message: error instanceof Error ? error.message : "Unknown error"
@@ -85,17 +84,17 @@ export default defineBackground(() => {
     console.log(`Background: Processing editor window request for editorId: ${editorId}`);
 
     // Check if there's already an active window for this editor ID
-    const existingWindowId = activeEditorWindows.get(editorId);
-    if (existingWindowId) {
+    const existingWindowInfo = activeEditorWindows.get(editorId);
+    if (existingWindowInfo) {
       try {
         // Try to focus the existing window
-        await chrome.windows.update(existingWindowId, { focused: true });
-        console.log(`Background: Focused existing window ${existingWindowId} for editorId: ${editorId}`);
+        await chrome.windows.update(existingWindowInfo.windowId, { focused: true });
+        console.log(`Background: Focused existing window ${existingWindowInfo.windowId} for editorId: ${editorId}`);
         return;
       } catch (error) {
         // Window might have been closed, remove from tracking
         activeEditorWindows.delete(editorId);
-        console.log(`Background: Existing window ${existingWindowId} no longer exists, creating new one`);
+        console.log(`Background: Existing window ${existingWindowInfo.windowId} no longer exists, creating new one`);
       }
     }
 
@@ -125,10 +124,13 @@ export default defineBackground(() => {
       height: 600
     });
 
-    if (window.id) {
-      // Track the new window
-      activeEditorWindows.set(editorId, window.id);
-      console.log(`Background: Created new editor window ${window.id} for editorId: ${editorId}`);
+    if (window.id && sender.tab?.id) {
+      // Track the new window with both window ID and originating tab ID
+      activeEditorWindows.set(editorId, {
+        windowId: window.id,
+        originTabId: sender.tab.id
+      });
+      console.log(`Background: Created new editor window ${window.id} for editorId: ${editorId}, originating from tab ${sender.tab.id}`);
 
       // Clean up tracking when window is closed
       chrome.windows.onRemoved.addListener((windowId) => {
@@ -165,7 +167,7 @@ export default defineBackground(() => {
           });
         return true; // Indicate async response
       } else if (message.type === MessageTypes.SYNC_CONTENT) {
-        // Forward SYNC_CONTENT messages to all tabs so page-helpers can decide if they should handle them
+        // Send SYNC_CONTENT messages directly to the originating tab using tracked window information
         handleSyncContentMessage(message as SyncContentMessage, sender, sendResponse);
         return true; // Indicate async response
       }
