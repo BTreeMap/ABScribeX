@@ -113,6 +113,8 @@ export default defineContentScript({
             }
         };
 
+        console.log('ABScribe: Global Helper Functions Initialized', window.ABScribeX);
+
         // Wait for global DOM utilities to be available (for other scripts)
         const waitForABScribeX = () => {
             return pageHelpers.waitForGlobal<typeof window.ABScribeX>('ABScribeX');
@@ -128,15 +130,17 @@ export default defineContentScript({
                     const clickedElement = event.target as HTMLElement;
                     if (!clickedElement || typeof clickedElement.tagName !== 'string') return;
 
+                    const ABScribeX = window.ABScribeX!;
+
                     // Use global DOM utility to check if element is editable
-                    if (!window.ABScribeX!.dom.isEditable(clickedElement)) {
+                    if (!ABScribeX.dom.isEditable(clickedElement)) {
                         console.log('ABScribe: Element is not editable, skipping.');
                         return;
                     }
 
                     // Generate unique class ID using global utility
-                    const classId = window.ABScribeX!.dom.generateElementId('abscribex-');
-                    window.ABScribeX!.dom.addElementClass(clickedElement, classId);
+                    const classId = ABScribeX.dom.generateElementId('abscribex-');
+                    ABScribeX.dom.addElementClass(clickedElement, classId);
 
                     // Find the highest priority class ID by traversing up the DOM hierarchy
                     let finalClassId = classId; // Will be the class ID we use for the element data
@@ -145,7 +149,7 @@ export default defineContentScript({
                     // Use global utility to find existing ABScribe element
                     const parentElement = clickedElement.parentElement;
                     if (parentElement) {
-                        const existingABScribeElement = window.ABScribeX!.dom.findABScribeElement(parentElement);
+                        const existingABScribeElement = ABScribeX.dom.findABScribeElement(parentElement);
                         if (existingABScribeElement) {
                             finalClassId = existingABScribeElement.classId;
                             targetElement = existingABScribeElement.element;
@@ -164,20 +168,20 @@ export default defineContentScript({
                         actualClickedElementClassId: classId,
                         classList: Array.from(targetElement.classList),
                         // Sanitize HTML content using the global sanitizer
-                        innerHTML: await window.ABScribeX!.dom.sanitizeHTML(targetElement.innerHTML),
+                        innerHTML: await ABScribeX.dom.sanitizeHTML(targetElement.innerHTML),
                         textContent: targetElement.textContent,
                         value: (targetElement as HTMLInputElement | HTMLTextAreaElement).value || undefined,
                         src: (targetElement as HTMLImageElement | HTMLMediaElement).src || undefined,
                         href: (targetElement as HTMLAnchorElement).href || undefined,
                     };
 
-                    const message = window.ABScribeX!.utils.createMessage(MessageTypes.CLICKED_ELEMENT, {
+                    const message = ABScribeX.utils.createMessage(MessageTypes.CLICKED_ELEMENT, {
                         element: elementDetails,
                     }) as ClickedElementMessage;
 
                     console.log('ABScribe: Sending clicked element to background:', elementDetails);
 
-                    await window.ABScribeX!.utils.sendMessage(message);
+                    await ABScribeX.utils.sendMessage(message);
                 } catch (error) {
                     logError(error, {
                         component: 'PageHelper',
