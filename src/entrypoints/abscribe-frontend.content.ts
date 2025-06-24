@@ -11,8 +11,8 @@ import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
 import { encode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings, savePerformanceMetrics } from '@/lib/settings';
 import { sleep } from '@/lib/utils';
+import { createDialogUtils } from '@/lib/dialog';
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
-
 
 const trigger = (keyword: string): void => {
     const buttons = document.querySelectorAll('button');
@@ -100,8 +100,11 @@ const initializeEditorInteraction = async () => {
                 console.log(`ABScribe: Oid already matches URL hash: ${currentUrl.hash}`);
             }
 
+            // Initialize dialog utilities for this content script context
+            const dialogUtils = createDialogUtils();
+
             // Ask user if they want to overwrite the existing content
-            const shouldOverwriteChoice = await showChoiceDialog(extractedOid);
+            const shouldOverwriteChoice = await dialogUtils.showDocumentOverwriteDialog(extractedOid);
 
             if (shouldOverwriteChoice) {
                 console.log('ABScribe: User chose to overwrite - will load cloud content into editor');
@@ -284,17 +287,6 @@ const initializeEditorInteraction = async () => {
             }
         }, 30000); // Log every 30 seconds
     }
-};
-
-const showChoiceDialog = (oid: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-        const result = confirm(
-            `Document ${oid} already exists.\n\n` +
-            `Click OK to overwrite with current page content.\n` +
-            `Click Cancel to keep the existing cloud content.`
-        );
-        resolve(result);
-    });
 };
 
 export default defineContentScript({
