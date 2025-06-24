@@ -15,7 +15,8 @@ import {
     ExtractTextMessage,
     PingOffscreenMessage,
     SanitizationResponse,
-    TextExtractionResponse
+    TextExtractionResponse,
+    ContentWithMetadata,
 } from '@/lib/config';
 import { generateIdentifier } from '@/lib/generateIdentifier';
 import { logError, withPerformanceMonitoring, withRetry, safeAsync } from '@/lib/errorHandler';
@@ -123,19 +124,6 @@ async function extractTextInOffscreen(html: string): Promise<string> {
  */
 export interface SanitizationOptions {
     elementType?: string;
-    dompurifyOptions?: any;
-}
-
-/**
- * Rich content type that tracks content state, element context, and sanitization options
- * Can contain either sanitized or unsanitized content - check isSanitized flag
- */
-export interface ContentWithMetadata {
-    content: string;
-    elementType?: string;
-    isSanitized: boolean;
-    originalLength?: number;
-    sanitizedAt?: number;
     dompurifyOptions?: any;
 }
 

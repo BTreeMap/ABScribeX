@@ -7,7 +7,8 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { type DOMUpdateOptions, type ElementInfo } from '@/lib/domUtils';
 import { generateIdentifier } from '@/lib/generateIdentifier';
-import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata, type SanitizationOptions, type ContentWithMetadata } from '@/lib/sanitizer';
+import { type ContentWithMetadata } from '@/lib/config';
+import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata, type SanitizationOptions } from '@/lib/sanitizer';
 import { stripStego } from '@/lib/stego';
 import {
     MessageTypes,
