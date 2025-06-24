@@ -12,6 +12,7 @@ import { stripStego } from '@/lib/stego';
 import {
   MessageTypes,
   RequestEditorWindowMessage,
+  ContextMenuClickedMessage,
   SyncContentMessage,
   ResponseMessage,
   createMessage,
@@ -50,6 +51,9 @@ export default defineContentScript({
     }
 
     const ABScribeX = window.ABScribeX!;
+
+    // Track the last right-clicked element for context menu
+    let lastRightClickedElement: HTMLElement | null = null;
 
     // Populate the global DOM utilities object
     ABScribeX.dom = {
@@ -111,9 +115,44 @@ export default defineContentScript({
 
     console.log('ABScribe: Global Helper Functions Initialized', ABScribeX);
 
-    // Listen for SYNC_CONTENT messages directed to this page
+    // Track right-clicked elements for context menu
+    document.addEventListener('contextmenu', (event: MouseEvent) => {
+      const clickedElement = event.target as HTMLElement;
+      if (clickedElement) {
+        // Just track the clicked element, defer editability checks to handleElementCapture
+        lastRightClickedElement = clickedElement;
+        console.log('ABScribe: Tracked right-clicked element:', clickedElement.tagName);
+      } else {
+        console.log('ABScribe: Right-clicked element is null or undefined');
+        lastRightClickedElement = null;
+      }
+    }, true);
+
+    // Listen for messages from background script
     chrome.runtime.onMessage.addListener(
       async (message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+        // Handle context menu clicked message from background
+        if (message.type === MessageTypes.CONTEXT_MENU_CLICKED) {
+          const contextMenuMessage = message as ContextMenuClickedMessage;
+          console.log('ABScribe: Context menu clicked message received, starting element capture');
+
+          // Use the tracked right-clicked element if available
+          if (lastRightClickedElement) {
+            console.log('ABScribe: Using tracked right-clicked element:', lastRightClickedElement.tagName);
+            handleElementCapture(lastRightClickedElement).catch(error => {
+              logError(error, {
+                component: 'PageHelper',
+                operation: 'contextMenuMessageHandler',
+                metadata: { element: lastRightClickedElement?.tagName }
+              });
+            });
+          } else {
+            console.log('ABScribe: No tracked right-clicked element found');
+          }
+          return; // No response needed for this message
+        }
+
+        // Handle sync content messages
         if (message.type === MessageTypes.SYNC_CONTENT) {
           const syncMessage = message as SyncContentMessage;
           const { editorId, content } = syncMessage;
@@ -191,7 +230,7 @@ export default defineContentScript({
       // Traverse up to find the highest editable element
       while (current.parentElement) {
         current = current.parentElement;
-        if (ABScribeX.dom?.isEditable(current)) {
+        if (ABScribeX.dom.isEditable(current)) {
           highestEditable = current;
         }
       }
@@ -199,24 +238,40 @@ export default defineContentScript({
       return highestEditable;
     };
 
-    // Context menu handler for element capture
-    const handleContextMenu = withPerformanceMonitoring(
-      async (event: MouseEvent) => {
+    // Element capture handler for when context menu is clicked
+    const handleElementCapture = withPerformanceMonitoring(
+      async (targetElement: HTMLElement) => {
         try {
           // Ensure global utilities are available
           await waitForABScribeX();
 
-          const clickedElement = event.target as HTMLElement;
-          if (!clickedElement || typeof clickedElement.tagName !== 'string') return;
+          // Use the provided target element directly
+          console.log('ABScribe: Processing target element:', targetElement.tagName);
 
-          // Use global DOM utility to check if element is editable
-          if (!ABScribeX.dom.isEditable(clickedElement)) {
-            console.log('ABScribe: Element is not editable, skipping.');
-            return;
+          // First check if the element or any parent is editable
+          if (!ABScribeX.dom.isEditable(targetElement)) {
+            // Try to find an editable parent
+            let current = targetElement.parentElement;
+            let foundEditable = false;
+
+            while (current && current !== document.body) {
+              if (ABScribeX.dom.isEditable(current)) {
+                targetElement = current;
+                foundEditable = true;
+                break;
+              }
+              current = current.parentElement;
+            }
+
+            if (!foundEditable) {
+              console.log('ABScribe: No editable element found in hierarchy');
+              return;
+            }
+            console.log('ABScribe: Found editable parent element:', targetElement);
           }
 
           // Find the highest editable element in the hierarchy
-          const targetElement = findHighestEditableElement(clickedElement);
+          targetElement = findHighestEditableElement(targetElement);
           console.log('ABScribe: Found target editable element:', targetElement.tagName);
 
           // Check if this element already has an abscribex- editor ID
@@ -269,20 +324,17 @@ export default defineContentScript({
         } catch (error) {
           logError(error, {
             component: 'PageHelper',
-            operation: 'handleContextMenu',
+            operation: 'handleElementCapture',
             metadata: {
-              targetTagName: (event.target as HTMLElement)?.tagName,
-              url: window.location.href
+              url: window.location.href,
+              elementTag: targetElement?.tagName
             }
           });
         }
       },
       'PageHelper',
-      'contextMenuHandler'
+      'elementCaptureHandler'
     );
-
-    // Set up event listeners
-    document.addEventListener('contextmenu', handleContextMenu, true);
 
     console.log('ABScribe: Global DOM utilities and element capture initialized successfully');
 

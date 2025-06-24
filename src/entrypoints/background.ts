@@ -2,6 +2,7 @@ import {
   MessageTypes,
   ContextMenuItemTypes,
   RequestEditorWindowMessage,
+  ContextMenuClickedMessage,
   SyncContentMessage,
   ResponseMessage,
   ExtensionMessage,
@@ -190,12 +191,31 @@ export default defineBackground(() => {
     });
   });
 
-  // Context menu is still needed to trigger the page-helper flow
+  // Context menu click handler - sends message to page-helper for element capture
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
-    if (info.menuItemId === ContextMenuItemTypes.EDIT_WITH_ABSCRIBE) {
-      console.log("ABScribe: Context menu clicked - page-helper will handle the element selection.");
-      // The actual handling is now done by page-helper.content.ts
-      // which will send a REQUEST_EDITOR_WINDOW message when an element is selected
+    if (info.menuItemId === ContextMenuItemTypes.EDIT_WITH_ABSCRIBE && tab?.id) {
+      console.log("ABScribe: Context menu clicked, sending message to page-helper for element capture");
+
+      try {
+        // Create message to notify page-helper that context menu was clicked
+        const message = createMessage<ContextMenuClickedMessage>(MessageTypes.CONTEXT_MENU_CLICKED, {
+          clickInfo: {
+            selectionText: info.selectionText,
+            pageUrl: info.pageUrl || tab.url || '',
+            frameUrl: info.frameUrl
+          }
+        });
+
+        // Send message to the active tab to trigger element capture
+        await chrome.tabs.sendMessage(tab.id, message);
+        console.log("ABScribe: Context menu message sent to tab", tab.id);
+      } catch (error) {
+        logError(error, {
+          component: 'Background',
+          operation: 'contextMenuClick',
+          metadata: { tabId: tab.id, pageUrl: info.pageUrl }
+        });
+      }
     }
   });
 });

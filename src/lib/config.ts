@@ -5,6 +5,9 @@ export const MessageTypes = {
     // Content script to background messages
     REQUEST_EDITOR_WINDOW: 'kr9n1dmuahhflff8dia8sn1kuj2p4f4kt',
 
+    // Background to page-helper messages
+    CONTEXT_MENU_CLICKED: 'kl8m3q9f7r2t5w6x1z4a8c9d2e5h7j0k',
+
     // Direct page-helper to abscribe-frontend communication
     SYNC_CONTENT: 'kkv54gn4p049hgucu8ouenjlm8bgdm1b1',
 
@@ -51,6 +54,18 @@ export interface RequestEditorWindowMessage extends BaseMessage {
     type: typeof MessageTypes.REQUEST_EDITOR_WINDOW;
     editorId: string;
     content: ContentWithMetadata;
+}
+
+/**
+ * Context menu clicked message from background to page-helper
+ */
+export interface ContextMenuClickedMessage extends BaseMessage {
+    type: typeof MessageTypes.CONTEXT_MENU_CLICKED;
+    clickInfo: {
+        selectionText?: string;
+        pageUrl: string;
+        frameUrl?: string;
+    };
 }
 
 /**
@@ -122,6 +137,7 @@ export interface TextExtractionResponse extends BaseMessage {
  */
 export type ExtensionMessage =
     | RequestEditorWindowMessage
+    | ContextMenuClickedMessage
     | SyncContentMessage
     | SanitizeHTMLMessage
     | ExtractTextMessage
