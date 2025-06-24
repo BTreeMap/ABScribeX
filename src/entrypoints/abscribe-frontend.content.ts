@@ -9,7 +9,7 @@ import {
 } from '@/lib/config';
 import { sanitizeHTML } from '@/lib/sanitizer';
 import { encode, decode, stripStego, extractStego } from '@/lib/stego';
-import { getSettings } from '@/lib/settings';
+import { getSettings, savePerformanceMetrics, PerformanceMetrics } from '@/lib/settings';
 
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
 
@@ -183,16 +183,116 @@ const initializeEditorInteraction = async () => {
     }
 
     if (editorTarget) {
-        setInterval(async () => {
-            const currentHTML = (editorTarget as HTMLTextAreaElement).value !== undefined ?
-                (editorTarget as HTMLTextAreaElement).value :
-                editorTarget.innerHTML;
-            const baseContent = currentHTML;
-            const stegoData = { oid: oid };
-            const filteredContent = await filterHTML(baseContent);
-            await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
-        }, 750);
-        console.log('ABScribe: Editor sync interval started for target:', editorTarget.tagName);
+        // Performance monitoring for self-adjusting sync frequency
+        let performanceMetrics = {
+            averageProcessingTime: 0,
+            measurements: [] as number[],
+            adjustmentCount: 0,
+            lastAdjustment: Date.now()
+        };
+
+        let currentSyncInterval = settings.syncInterval || 250; // Default to 250ms if not set
+        let syncIntervalId: ReturnType<typeof setInterval> | null = null;
+
+        const measurePerformance = (processingTime: number): void => {
+            performanceMetrics.measurements.push(processingTime);
+
+            // Keep only last 10 measurements for rolling average
+            if (performanceMetrics.measurements.length > 10) {
+                performanceMetrics.measurements.shift();
+            }
+
+            performanceMetrics.averageProcessingTime =
+                performanceMetrics.measurements.reduce((sum, time) => sum + time, 0) /
+                performanceMetrics.measurements.length;
+        };
+
+        const adjustSyncFrequency = async (): Promise<void> => {
+            const now = Date.now();
+            const timeSinceLastAdjustment = now - performanceMetrics.lastAdjustment;
+
+            // Only adjust every 10 seconds to avoid thrashing
+            if (timeSinceLastAdjustment < 10000) return;
+
+            const avgProcessingTime = performanceMetrics.averageProcessingTime;
+            const targetProcessingRatio = 0.3; // Sync should use max 30% of interval time
+
+            if (avgProcessingTime > 0 && performanceMetrics.measurements.length >= 5) {
+                const idealInterval = Math.max(avgProcessingTime / targetProcessingRatio, 100); // Min 100ms
+                const maxInterval = Math.max(settings.syncInterval * 2, 1000); // Max 2x setting or 1000ms
+                const minInterval = Math.max(settings.syncInterval * 0.5, 100); // Min 0.5x setting or 100ms
+
+                let newInterval = Math.min(Math.max(idealInterval, minInterval), maxInterval);
+                newInterval = Math.round(newInterval / 50) * 50; // Round to nearest 50ms
+
+                if (Math.abs(newInterval - currentSyncInterval) > 50) {
+                    console.log(`ABScribe: Adjusting sync interval from ${currentSyncInterval}ms to ${newInterval}ms (avg processing: ${avgProcessingTime.toFixed(1)}ms)`);
+                    currentSyncInterval = newInterval;
+                    performanceMetrics.adjustmentCount++;
+                    performanceMetrics.lastAdjustment = now;
+
+                    // Save performance metrics to storage
+                    try {
+                        await savePerformanceMetrics({
+                            averageProcessingTime: avgProcessingTime,
+                            currentSyncInterval: currentSyncInterval,
+                            adjustmentCount: performanceMetrics.adjustmentCount,
+                            lastUpdated: now,
+                            samplesCount: performanceMetrics.measurements.length
+                        });
+                    } catch (error) {
+                        console.warn('ABScribe: Failed to save performance metrics:', error);
+                    }
+
+                    // Restart the interval with new timing
+                    if (syncIntervalId) {
+                        clearInterval(syncIntervalId);
+                        startSyncInterval();
+                    }
+                }
+            }
+        };
+
+        const syncContent = async (): Promise<void> => {
+            const startTime = performance.now();
+
+            try {
+                const currentHTML = (editorTarget as HTMLTextAreaElement).value !== undefined ?
+                    (editorTarget as HTMLTextAreaElement).value :
+                    editorTarget.innerHTML;
+                const baseContent = currentHTML;
+                const stegoData = { oid: oid };
+                const filteredContent = await filterHTML(baseContent);
+                await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
+
+                const processingTime = performance.now() - startTime;
+                measurePerformance(processingTime);
+                adjustSyncFrequency();
+
+            } catch (error) {
+                console.warn('ABScribe: Error during sync:', error);
+                const processingTime = performance.now() - startTime;
+                measurePerformance(processingTime);
+            }
+        };
+
+        const startSyncInterval = (): void => {
+            if (syncIntervalId) {
+                clearInterval(syncIntervalId);
+            }
+            syncIntervalId = setInterval(syncContent, currentSyncInterval);
+            console.log(`ABScribe: Editor sync interval started at ${currentSyncInterval}ms for target:`, editorTarget.tagName);
+        };
+
+        // Start the sync interval
+        startSyncInterval();
+
+        // Log performance stats periodically
+        setInterval(() => {
+            if (performanceMetrics.measurements.length > 0) {
+                console.log(`ABScribe Performance: Avg processing time: ${performanceMetrics.averageProcessingTime.toFixed(1)}ms, Current interval: ${currentSyncInterval}ms, Adjustments: ${performanceMetrics.adjustmentCount}`);
+            }
+        }, 30000); // Log every 30 seconds
     }
 };
 

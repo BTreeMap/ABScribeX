@@ -13,7 +13,7 @@ export const defaultSettings: ExtensionSettings = {
     autoSave: true,
     theme: 'auto',
     defaultModifiers: ['Make it professional', 'Shorten', 'Expand', 'Make it more casual'],
-    syncInterval: 500
+    syncInterval: 250
 };
 
 /**
@@ -91,6 +91,43 @@ export async function clearLocalStorage(): Promise<void> {
                 console.log('All chrome.storage.local content has been cleared');
                 resolve();
             }
+        });
+    });
+}
+
+/**
+ * Performance metrics interface
+ */
+export interface PerformanceMetrics {
+    averageProcessingTime: number;
+    currentSyncInterval: number;
+    adjustmentCount: number;
+    lastUpdated: number;
+    samplesCount: number;
+}
+
+/**
+ * Store performance metrics
+ */
+export async function savePerformanceMetrics(metrics: PerformanceMetrics): Promise<void> {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.set({ performanceMetrics: metrics }, () => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
+
+/**
+ * Get performance metrics
+ */
+export async function getPerformanceMetrics(): Promise<PerformanceMetrics | null> {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['performanceMetrics'], (result) => {
+            resolve(result.performanceMetrics || null);
         });
     });
 }

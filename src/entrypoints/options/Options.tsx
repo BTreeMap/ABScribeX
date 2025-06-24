@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
 import './Options.css';
-import { ExtensionSettings, defaultSettings, getSettings, saveSettings as saveSettingsToStorage, clearLocalStorage } from '@/lib/settings';
+import {
+  ExtensionSettings,
+  defaultSettings,
+  getSettings,
+  saveSettings as saveSettingsToStorage,
+  clearLocalStorage,
+  getPerformanceMetrics,
+  PerformanceMetrics
+} from '@/lib/settings';
 
 function Options() {
   const [settings, setSettings] = useState<ExtensionSettings>(defaultSettings);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [isClearing, setIsClearing] = useState(false);
@@ -12,6 +21,7 @@ function Options() {
   // Load settings on component mount
   useEffect(() => {
     getSettings().then(setSettings);
+    getPerformanceMetrics().then(setPerformanceMetrics);
   }, []);
 
   const handleInputChange = (key: keyof ExtensionSettings, value: any) => {
@@ -123,11 +133,45 @@ function Options() {
               id="syncInterval"
               min="100"
               max="5000"
-              step="100"
+              step="50"
               value={settings.syncInterval}
               onChange={(e) => handleInputChange('syncInterval', parseInt(e.target.value))}
             />
-            <small>How often to sync content with the editor (100-5000ms)</small>
+            <small>
+              How often to sync content with the editor (100-5000ms).
+              Lower values provide better responsiveness but use more resources.
+              The extension will auto-adjust this value based on performance.
+            </small>
+          </div>
+
+          <div className="setting-item">
+            <div className="performance-info">
+              <h4>Sync Performance</h4>
+              <p><strong>Recommended Values:</strong></p>
+              <ul>
+                <li><strong>250ms</strong> - Fast typing, modern devices (recommended)</li>
+                <li><strong>500ms</strong> - Balanced performance</li>
+                <li><strong>1000ms</strong> - Slower devices or poor network</li>
+              </ul>
+
+              {performanceMetrics && (
+                <div className="current-performance">
+                  <h5>Current Performance:</h5>
+                  <ul>
+                    <li><strong>Avg Processing Time:</strong> {performanceMetrics.averageProcessingTime.toFixed(1)}ms</li>
+                    <li><strong>Current Sync Interval:</strong> {performanceMetrics.currentSyncInterval}ms</li>
+                    <li><strong>Auto-Adjustments Made:</strong> {performanceMetrics.adjustmentCount}</li>
+                    <li><strong>Samples Collected:</strong> {performanceMetrics.samplesCount}</li>
+                    <li><strong>Last Updated:</strong> {new Date(performanceMetrics.lastUpdated).toLocaleString()}</li>
+                  </ul>
+                </div>
+              )}
+
+              <p>
+                <em>Note: The extension automatically adjusts sync frequency based on processing time
+                  to maintain optimal performance. Your setting acts as a baseline.</em>
+              </p>
+            </div>
           </div>
         </section>
 

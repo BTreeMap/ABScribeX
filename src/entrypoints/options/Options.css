@@ -235,6 +235,64 @@
   margin-bottom: 0.5rem;
 }
 
+/* Performance info styling */
+.performance-info {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.performance-info h4 {
+  margin: 0 0 0.75rem 0;
+  color: #495057;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.performance-info h5 {
+  margin: 1rem 0 0.5rem 0;
+  color: #495057;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.performance-info p {
+  margin: 0.5rem 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.performance-info ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.performance-info li {
+  margin-bottom: 0.25rem;
+}
+
+.performance-info em {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.current-performance {
+  background-color: #e9f7ef;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.current-performance ul {
+  margin: 0.25rem 0;
+  color: #155724;
+}
+
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
   .options-container {
