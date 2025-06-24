@@ -3,7 +3,6 @@ import {
     MessageTypes,
     createMessage,
     sendMessage,
-    ClickedElementMessage,
     RequestEditorWindowMessage,
     SyncContentMessage,
     createStorage,
@@ -13,9 +12,6 @@ import { createContentWithMetadata } from './sanitizer';
 
 describe('MessageTypes', () => {
     it('should have all required message types defined', () => {
-        expect(typeof MessageTypes.CLICKED_ELEMENT).toBe('string');
-        expect(MessageTypes.CLICKED_ELEMENT).toBeTruthy();
-
         expect(typeof MessageTypes.REQUEST_EDITOR_WINDOW).toBe('string');
         expect(MessageTypes.REQUEST_EDITOR_WINDOW).toBeTruthy();
 
@@ -36,24 +32,6 @@ describe('MessageTypes', () => {
 
         expect(typeof MessageTypes.ERROR).toBe('string');
         expect(MessageTypes.ERROR).toBeTruthy();
-    });
-
-    it('should create a valid message with createMessage', () => {
-        const message = createMessage<ClickedElementMessage>(MessageTypes.CLICKED_ELEMENT, {
-            element: {
-                tagName: 'div',
-                classId: 'test-class',
-                actualClickedElementClassId: 'actual-test-class',
-                classList: ['test'],
-                innerHTML: '<span>test</span>',
-                textContent: 'test'
-            }
-        });
-
-        expect(message.type).toBe(MessageTypes.CLICKED_ELEMENT);
-        expect(message.timestamp).toBeTypeOf('number');
-        expect(message.element).toBeDefined();
-        expect(message.element.tagName).toBe('div');
     });
 
     it('should create a valid REQUEST_EDITOR_WINDOW message', () => {

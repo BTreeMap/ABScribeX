@@ -3,7 +3,6 @@
  */
 export const MessageTypes = {
     // Content script to background messages
-    CLICKED_ELEMENT: 'klagjuvn54uh6ibtrpm0bo6fsgn68vgdl',
     REQUEST_EDITOR_WINDOW: 'kr9n1dmuahhflff8dia8sn1kuj2p4f4kt',
 
     // Direct page-helper to abscribe-frontend communication
@@ -39,14 +38,6 @@ export interface BaseMessage {
     type: string;
     id?: string;
     timestamp?: number;
-}
-
-/**
- * Clicked element message from content script to background
- */
-export interface ClickedElementMessage extends BaseMessage {
-    type: typeof MessageTypes.CLICKED_ELEMENT;
-    element: ClickedElementData;
 }
 
 /**
@@ -122,25 +113,10 @@ export interface TextExtractionResponse extends BaseMessage {
 /**
  * Clicked element data structure
  */
-export interface ClickedElementData {
-    tagName: string;
-    id?: string;
-    parentId?: string;
-    classId: string;
-    actualClickedElementClassId: string;
-    classList: string[];
-    innerHTML: string;
-    textContent: string | null;
-    value?: string;
-    src?: string;
-    href?: string;
-}
-
 /**
  * Union type for all possible messages
  */
 export type ExtensionMessage =
-    | ClickedElementMessage
     | RequestEditorWindowMessage
     | SyncContentMessage
     | SanitizeHTMLMessage

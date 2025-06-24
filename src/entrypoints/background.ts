@@ -1,6 +1,5 @@
 import {
   MessageTypes,
-  ClickedElementMessage,
   RequestEditorWindowMessage,
   SyncContentMessage,
   ResponseMessage,
@@ -149,11 +148,7 @@ export default defineBackground(() => {
 
   chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
     try {
-      if (message.type === MessageTypes.CLICKED_ELEMENT) {
-        const clickedMessage = message as ClickedElementMessage;
-        console.log('Background: Received clicked element (legacy):', clickedMessage.element);
-        // This is now handled by page-helper via REQUEST_EDITOR_WINDOW
-      } else if (message.type === MessageTypes.REQUEST_EDITOR_WINDOW) {
+      if (message.type === MessageTypes.REQUEST_EDITOR_WINDOW) {
         const requestMessage = message as RequestEditorWindowMessage;
         handleEditorWindowRequest(requestMessage, sender)
           .then(() => {
