@@ -10,9 +10,9 @@ const mockChromeStorage = {
     }
 };
 
-// @ts-ignore
+// @ts-ignore - Mock object doesn't need full chrome.storage interface for testing
 global.chrome = {
-    storage: mockChromeStorage
+    storage: mockChromeStorage as any
 };
 
 describe('ErrorHandler', () => {
