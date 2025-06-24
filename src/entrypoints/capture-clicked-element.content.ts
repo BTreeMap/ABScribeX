@@ -20,7 +20,43 @@ export default defineContentScript({
             const clickedElement = event.target as HTMLElement;
             if (!clickedElement || typeof clickedElement.tagName !== 'string') return;
 
-            let namedParent: HTMLElement | null = clickedElement;
+            // Check if the element is editable (contenteditable, input, or textarea)
+            const isEditable = clickedElement.isContentEditable ||
+                clickedElement.tagName.toLowerCase() === 'input' ||
+                clickedElement.tagName.toLowerCase() === 'textarea';
+
+            if (!isEditable) {
+                console.log('ABScribe: Element is not editable, skipping.');
+                return;
+            }
+
+            const classId = generateIdentifier('abscribex-');
+            clickedElement.classList.add(classId);
+
+            // Find the highest priority class ID by traversing up the DOM hierarchy
+            let finalClassId = classId; // Will be the class ID we use for the element data
+            let currentElement: HTMLElement | null = clickedElement;
+            let targetElement = clickedElement; // Element to extract data from
+
+            while (currentElement) {
+                const abscribeClasses = Array.from(currentElement.classList)
+                    .filter(className => className.startsWith('abscribex-'));
+
+                if (abscribeClasses.length > 0 && currentElement !== clickedElement) {
+                    finalClassId = abscribeClasses[0];
+                    targetElement = currentElement;
+                    break;
+                }
+
+                currentElement = currentElement.parentElement;
+            }
+
+            // Log if we found a higher priority element
+            if (finalClassId !== classId) {
+                console.log('ABScribe: Found higher priority ABScribe element in hierarchy. Using existing element with class:', finalClassId, 'Target element:', targetElement.tagName);
+            }
+
+            let namedParent: HTMLElement | null = targetElement;
             while (namedParent && !namedParent.id) {
                 if (namedParent.parentElement && namedParent.parentElement !== namedParent) {
                     namedParent = namedParent.parentElement;
@@ -30,39 +66,19 @@ export default defineContentScript({
                 }
             }
 
-            const classId = generateIdentifier('abscribex-');
-            clickedElement.classList.add(classId);
-
-            // Find the highest priority class ID by traversing up the DOM hierarchy
-            let highestPriorityClassId = classId;
-            let currentElement: HTMLElement | null = clickedElement;
-
-            while (currentElement) {
-                const abscribeClasses = Array.from(currentElement.classList)
-                    .filter(className => className.startsWith('abscribex-'));
-
-                if (abscribeClasses.length > 0) {
-                    highestPriorityClassId = abscribeClasses[0];
-                }
-
-                currentElement = currentElement.parentElement;
-            }
-
-            // Sanitize HTML content using the cross-environment sanitizer
-            const sanitizedInnerHTML = await sanitizeHTML(clickedElement.innerHTML);
-
             const elementDetails: ClickedElementData = {
-                tagName: clickedElement.tagName,
-                id: clickedElement.id || undefined,
+                tagName: targetElement.tagName,
+                id: targetElement.id || undefined,
                 parentId: namedParent?.id || undefined,
-                classId,
-                highestPriorityClassId,
-                classList: Array.from(clickedElement.classList),
-                innerHTML: sanitizedInnerHTML,
-                textContent: clickedElement.textContent,
-                value: (clickedElement as HTMLInputElement | HTMLTextAreaElement).value || undefined,
-                src: (clickedElement as HTMLImageElement | HTMLMediaElement).src || undefined,
-                href: (clickedElement as HTMLAnchorElement).href || undefined,
+                classId: finalClassId,
+                actualClickedElementClassId: classId,
+                classList: Array.from(targetElement.classList),
+                // Sanitize HTML content using the cross-environment sanitizer
+                innerHTML: await sanitizeHTML(targetElement.innerHTML),
+                textContent: targetElement.textContent,
+                value: (targetElement as HTMLInputElement | HTMLTextAreaElement).value || undefined,
+                src: (targetElement as HTMLImageElement | HTMLMediaElement).src || undefined,
+                href: (targetElement as HTMLAnchorElement).href || undefined,
             };
 
             const message = createMessage<ClickedElementMessage>(MessageTypes.CLICKED_ELEMENT, {
