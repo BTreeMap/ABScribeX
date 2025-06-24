@@ -12,7 +12,6 @@ import { generateIdentifier } from '@/lib/generateIdentifier';
 import { getSettings } from '@/lib/settings';
 import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
 import { logError, withPerformanceMonitoring, withRetry } from '@/lib/errorHandler';
-import { updateElement } from '@/lib/domUtils';
 
 import { defineBackground } from 'wxt/utils/define-background';
 
@@ -140,7 +139,7 @@ export default defineBackground(() => {
                 args: [sanitizedContent, textOnlyContent, target.classId, target.tagName],
                 func: (sanitizedHtmlContent: string, textContent: string, elementClassId: string, elementTagName: string) => {
                   /**
-                   * Enhanced DOM update utility using ABScribeX DOM utils
+                   * Enhanced DOM update utility using ABScribeX global DOM utils
                    */
                   try {
                     const elem = document.querySelector(`.${elementClassId}`) as HTMLElement;
@@ -149,69 +148,14 @@ export default defineBackground(() => {
                       return;
                     }
 
-                    // Import the updateElement function (simplified inline version)
-                    function updateElementInline(element: HTMLElement, content: string, textContent: string, tagName: string) {
-                      // Ensure element is visible
-                      if (element.style.display === 'none') {
-                        element.style.display = '';
-                      }
-
-                      const tag = tagName.toLowerCase();
-
-                      if (tag === 'textarea' || tag === 'input') {
-                        // Enhanced form input handling
-                        const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
-
-                        // Focus element
-                        inputElement.focus();
-
-                        // Get native setter
-                        const descriptor = Object.getOwnPropertyDescriptor(inputElement, 'value') ||
-                          Object.getOwnPropertyDescriptor(Object.getPrototypeOf(inputElement), 'value');
-
-                        if (descriptor && descriptor.set) {
-                          descriptor.set.call(inputElement, textContent);
-                        } else {
-                          inputElement.value = textContent;
-                        }
-
-                        // Trigger comprehensive events
-                        const events = [
-                          new InputEvent('input', { bubbles: true, cancelable: false, inputType: 'insertText', data: textContent, composed: true }),
-                          new Event('change', { bubbles: true, cancelable: true }),
-                          new FocusEvent('blur', { bubbles: true, cancelable: true })
-                        ];
-
-                        events.forEach(event => inputElement.dispatchEvent(event));
-
-                      } else if (element.contentEditable === 'true' || element.isContentEditable) {
-                        // Enhanced contenteditable handling
-                        element.focus();
-                        element.innerHTML = content;
-
-                        // Set cursor at end
-                        const selection = window.getSelection();
-                        if (selection) {
-                          const range = document.createRange();
-                          range.selectNodeContents(element);
-                          range.collapse(false);
-                          selection.removeAllRanges();
-                          selection.addRange(range);
-                        }
-
-                        // Trigger events
-                        element.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }));
-                        element.dispatchEvent(new Event('change', { bubbles: true }));
-
-                      } else {
-                        // Simple HTML update for other elements
-                        element.innerHTML = content;
-                        element.dispatchEvent(new Event('change', { bubbles: true }));
-                      }
+                    // Use global ABScribeX DOM utilities (should always be available via page-helper)
+                    if (window.ABScribeX?.dom?.updateElement) {
+                      // Use the global DOM utilities from page-helper
+                      window.ABScribeX.dom.updateElement(elem, sanitizedHtmlContent, textContent);
+                      console.log("ABScribe: Content updated using global DOM utilities for element with classId:", elementClassId);
+                    } else {
+                      console.error("ABScribe: Global DOM utilities not available - page-helper may not be loaded");
                     }
-
-                    updateElementInline(elem, sanitizedHtmlContent, textContent, elementTagName);
-                    console.log("ABScribe: Content updated for element with classId:", elementClassId);
 
                   } catch (error) {
                     console.error("ABScribe: Error updating element:", error);
