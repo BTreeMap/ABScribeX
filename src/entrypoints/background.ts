@@ -4,16 +4,14 @@ import {
   RequestEditorWindowMessage,
   SyncContentMessage,
   ResponseMessage,
-  ClickedElementData,
   ExtensionMessage,
   createMessage,
   ContentStorage,
   ContentWithMetadata
 } from '@/lib/config';
-import { generateIdentifier } from '@/lib/generateIdentifier';
 import { getSettings } from '@/lib/settings';
-import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
-import { logError, withPerformanceMonitoring, withRetry } from '@/lib/errorHandler';
+import { sanitizeHTML } from '@/lib/sanitizer';
+import { logError, withRetry } from '@/lib/errorHandler';
 
 import { defineBackground } from 'wxt/utils/define-background';
 

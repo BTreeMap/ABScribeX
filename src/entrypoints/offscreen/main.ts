@@ -1,9 +1,8 @@
 import DOMPurify from 'dompurify';
-import { 
-    MessageTypes, 
-    SanitizeHTMLMessage, 
-    ExtractTextMessage, 
-    PingOffscreenMessage,
+import {
+    MessageTypes,
+    SanitizeHTMLMessage,
+    ExtractTextMessage,
     SanitizationResponse,
     TextExtractionResponse,
     createMessage
@@ -75,7 +74,7 @@ async function handleTextExtraction(request: ExtractTextMessage): Promise<TextEx
         const sanitizedHtml = DOMPurify.sanitize(request.html) as unknown as string;
         container.innerHTML = sanitizedHtml;
         const textContent = container.textContent || container.innerText || '';
-        
+
         // Clean up
         container.innerHTML = '';
 

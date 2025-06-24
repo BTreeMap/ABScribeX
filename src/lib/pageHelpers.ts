@@ -19,7 +19,7 @@
  * - Utilities (sleep, global waiting) provided at this level
  */
 
-import { createDOMUtils, type DOMUpdateOptions, type BrowserContext } from '@/lib/domUtils';
+import { createDOMUtils, type BrowserContext } from '@/lib/domUtils';
 import { sleep } from '@/lib/utils';
 
 /**

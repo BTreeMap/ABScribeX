@@ -5,17 +5,14 @@
  */
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import { type DOMUpdateOptions, type ElementInfo } from '@/lib/domUtils';
 import { generateIdentifier } from '@/lib/generateIdentifier';
 import { type ContentWithMetadata } from '@/lib/config';
-import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata, type SanitizationOptions } from '@/lib/sanitizer';
+import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata } from '@/lib/sanitizer';
 import { stripStego } from '@/lib/stego';
 import {
     MessageTypes,
-    ClickedElementMessage,
     RequestEditorWindowMessage,
     SyncContentMessage,
-    ClickedElementData,
     ResponseMessage,
     createMessage,
     sendMessage

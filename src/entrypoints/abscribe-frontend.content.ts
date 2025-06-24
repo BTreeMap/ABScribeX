@@ -6,13 +6,11 @@ import {
     createMessage,
     sendMessage,
     ContentStorage,
-    ContentWithMetadata
 } from '@/lib/config';
 import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
-import { encode, decode, stripStego, extractStego } from '@/lib/stego';
-import { getSettings, savePerformanceMetrics, PerformanceMetrics } from '@/lib/settings';
+import { encode, stripStego, extractStego } from '@/lib/stego';
+import { getSettings, savePerformanceMetrics } from '@/lib/settings';
 import { sleep } from '@/lib/utils';
-
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
 
 // HTML tag allowlist filtering (from legacy implementation)
