@@ -4,6 +4,9 @@
 export const MessageTypes = {
     // Content script to background messages
     CLICKED_ELEMENT: 'klagjuvn54uh6ibtrpm0bo6fsgn68vgdl',
+    REQUEST_EDITOR_WINDOW: 'kreqedwin7d49hgucu8ouenjlm8bgdm1b1',
+
+    // Direct page-helper to abscribe-frontend communication
     SYNC_CONTENT: 'kkv54gn4p049hgucu8ouenjlm8bgdm1b1',
 
     // Service worker to offscreen document messages
@@ -34,12 +37,21 @@ export interface ClickedElementMessage extends BaseMessage {
 }
 
 /**
- * Content sync message from content script to background
+ * Request editor window message from page-helper to background
+ */
+export interface RequestEditorWindowMessage extends BaseMessage {
+    type: typeof MessageTypes.REQUEST_EDITOR_WINDOW;
+    editorId: string;
+    content: string;
+}
+
+/**
+ * Content sync message - direct communication between content scripts
  */
 export interface SyncContentMessage extends BaseMessage {
     type: typeof MessageTypes.SYNC_CONTENT;
     content: string;
-    key: string;
+    editorId: string; // Changed from 'key' to 'editorId' 
 }
 
 /**
@@ -116,6 +128,7 @@ export interface ClickedElementData {
  */
 export type ExtensionMessage =
     | ClickedElementMessage
+    | RequestEditorWindowMessage
     | SyncContentMessage
     | SanitizeHTMLMessage
     | ExtractTextMessage
@@ -149,6 +162,23 @@ export async function sendMessage<T extends BaseMessage, R = any>(
         return response;
     } catch (error) {
         console.error('Failed to send message:', error);
+        throw error;
+    }
+}
+
+/**
+ * Utility function for direct content script to content script communication
+ * Uses chrome.tabs.sendMessage to communicate between content scripts
+ */
+export async function sendMessageToTab<T extends BaseMessage, R = any>(
+    tabId: number,
+    message: T
+): Promise<R> {
+    try {
+        const response = await chrome.tabs.sendMessage(tabId, message);
+        return response;
+    } catch (error) {
+        console.error('Failed to send message to tab:', error);
         throw error;
     }
 }

@@ -54,20 +54,20 @@ const trigger = (keyword: string): void => {
     console.log(`ABScribe: No button found with keyword '${keyword}'.`);
 };
 
-const sync = async (content: string, key: string): Promise<void> => {
-    // const sanitizedContent = await sanitizeHTML(content);
-    console.log("ABScribe: Syncing content with key:", key, "Content length:", content.length);
+const sync = async (content: string, editorId: string): Promise<void> => {
+    console.log("ABScribe: Syncing content with editorId:", editorId, "Content length:", content.length);
 
     const message = createMessage<SyncContentMessage>(MessageTypes.SYNC_CONTENT, {
         content: content,
-        key,
+        editorId, // Changed from 'key' to 'editorId'
     });
 
     try {
+        // Send to background which will forward to the appropriate page-helper
         const response = await sendMessage(message);
-        console.log("ABScribe: Received response from background: ", response?.status, response?.message);
+        console.log("ABScribe: Received response from page-helper: ", response?.status, response?.message);
     } catch (error: any) {
-        console.warn("ABScribe: Error sending message to background from abscribe-frontend:", error);
+        console.warn("ABScribe: Error sending sync message:", error);
     }
 };
 
@@ -83,14 +83,17 @@ const initializeEditorInteraction = async () => {
     }
     console.log('ABScribe: Secret and key matched, abscribe-frontend.content.ts activating for editor interaction.');
 
+    // The key is now the editorId directly
+    const editorId = key;
+
     let initialContent = '<p>Loading content...</p>';
     try {
         // Use the centralized ContentStorage utility to get content
-        const storedContent = await ContentStorage.getContent(key);
+        const storedContent = await ContentStorage.getContent(editorId);
         if (typeof storedContent === 'string') {
             initialContent = storedContent;
         } else {
-            console.warn(`ABScribe: Content not found in local ContentStorage for key ${key}.`);
+            console.warn(`ABScribe: Content not found in local ContentStorage for editorId ${editorId}.`);
             initialContent = '<p>Error: No content found.</p>';
         }
     } catch (e) {
@@ -257,7 +260,7 @@ const initializeEditorInteraction = async () => {
                 const baseContent = currentHTML;
                 const stegoData = { oid: oid };
                 const filteredContent = await sanitizeHTML(baseContent);
-                await sync(filteredContent + encode(JSON.stringify(stegoData)), key);
+                await sync(filteredContent + encode(JSON.stringify(stegoData)), editorId);
 
                 const processingTime = performance.now() - startTime;
                 measurePerformance(processingTime);

@@ -1,6 +1,7 @@
 import {
   MessageTypes,
   ClickedElementMessage,
+  RequestEditorWindowMessage,
   SyncContentMessage,
   ResponseMessage,
   ClickedElementData,
@@ -18,20 +19,160 @@ import { defineBackground } from 'wxt/utils/define-background';
 export default defineBackground(() => {
   console.log('ABScribe Background Service Worker Loaded.');
 
-  let lastClickedElement: ClickedElementData | undefined = undefined;
-  const mapTab = new Map<string, { tabId?: number; target?: ClickedElementData }>();
+  // Track active editor windows to prevent duplicates
+  const activeEditorWindows = new Map<string, number>(); // editorId -> windowId
+
+  /**
+   * Handle SYNC_CONTENT messages by forwarding them to all tabs
+   * so page-helper scripts can decide if they should handle them
+   */
+  const handleSyncContentMessage = async (
+    message: SyncContentMessage,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: any) => void
+  ): Promise<void> => {
+    const { editorId } = message;
+    console.log(`Background: Forwarding SYNC_CONTENT message for editorId: ${editorId}`);
+
+    try {
+      // Get all tabs and send the message to each one
+      const tabs = await chrome.tabs.query({});
+      let responseReceived = false;
+
+      for (const tab of tabs) {
+        if (tab.id) {
+          try {
+            // Send message to tab - only the page-helper managing this editorId will respond
+            const response = await chrome.tabs.sendMessage(tab.id, message);
+            if (response && response.status) {
+              console.log(`Background: Received response from tab ${tab.id}:`, response);
+              if (!responseReceived) {
+                sendResponse(response);
+                responseReceived = true;
+              }
+              break; // Stop once we get a successful response
+            }
+          } catch (error) {
+            // Tab might not have the content script loaded, ignore
+            continue;
+          }
+        }
+      }
+
+      if (!responseReceived) {
+        const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+          status: "error",
+          message: `No page-helper found managing editorId: ${editorId}`
+        });
+        sendResponse(errorResponse);
+      }
+    } catch (error) {
+      console.error(`Background: Error forwarding SYNC_CONTENT message:`, error);
+      const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+      sendResponse(errorResponse);
+    }
+  };
+
+  /**
+   * Handle requests to open editor windows
+   */
+  const handleEditorWindowRequest = async (request: RequestEditorWindowMessage, sender: chrome.runtime.MessageSender): Promise<void> => {
+    const { editorId, content } = request;
+
+    console.log(`Background: Processing editor window request for editorId: ${editorId}`);
+
+    // Check if there's already an active window for this editor ID
+    const existingWindowId = activeEditorWindows.get(editorId);
+    if (existingWindowId) {
+      try {
+        // Try to focus the existing window
+        await chrome.windows.update(existingWindowId, { focused: true });
+        console.log(`Background: Focused existing window ${existingWindowId} for editorId: ${editorId}`);
+        return;
+      } catch (error) {
+        // Window might have been closed, remove from tracking
+        activeEditorWindows.delete(editorId);
+        console.log(`Background: Existing window ${existingWindowId} no longer exists, creating new one`);
+      }
+    }
+
+    // Get settings for editor URL
+    const settings = await withRetry(
+      () => getSettings(),
+      3,
+      1000,
+      'Background',
+      'getSettings'
+    );
+
+    // Store content using the editorId as the key
+    const sanitizedContent = await sanitizeHTML(content);
+    await ContentStorage.storeContent(editorId, sanitizedContent);
+
+    // Create editor URL with editorId instead of random key
+    const popupUrl = new URL(settings.editorUrl);
+    popupUrl.searchParams.set('secret', settings.activationKey);
+    popupUrl.searchParams.set('key', editorId); // Use editorId as the key
+
+    // Create new editor window
+    const window = await chrome.windows.create({
+      url: popupUrl.href,
+      type: 'popup',
+      width: 400,
+      height: 600
+    });
+
+    if (window.id) {
+      // Track the new window
+      activeEditorWindows.set(editorId, window.id);
+      console.log(`Background: Created new editor window ${window.id} for editorId: ${editorId}`);
+
+      // Clean up tracking when window is closed
+      chrome.windows.onRemoved.addListener((windowId) => {
+        if (windowId === window.id) {
+          activeEditorWindows.delete(editorId);
+          console.log(`Background: Window ${windowId} closed, removed editorId ${editorId} from tracking`);
+        }
+      });
+    }
+  };
 
   chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
     try {
       if (message.type === MessageTypes.CLICKED_ELEMENT) {
         const clickedMessage = message as ClickedElementMessage;
-        lastClickedElement = clickedMessage.element;
-        console.log('Background: Received clicked element:', lastClickedElement);
+        console.log('Background: Received clicked element (legacy):', clickedMessage.element);
+        // This is now handled by page-helper via REQUEST_EDITOR_WINDOW
+      } else if (message.type === MessageTypes.REQUEST_EDITOR_WINDOW) {
+        const requestMessage = message as RequestEditorWindowMessage;
+        handleEditorWindowRequest(requestMessage, sender)
+          .then(() => {
+            const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {
+              status: "success",
+              message: "Editor window request processed"
+            });
+            sendResponse(successResponse);
+          })
+          .catch((error: any) => {
+            const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+              status: "error",
+              message: error instanceof Error ? error.message : "Unknown error"
+            });
+            sendResponse(errorResponse);
+          });
+        return true; // Indicate async response
+      } else if (message.type === MessageTypes.SYNC_CONTENT) {
+        // Forward SYNC_CONTENT messages to all tabs so page-helpers can decide if they should handle them
+        handleSyncContentMessage(message as SyncContentMessage, sender, sendResponse);
+        return true; // Indicate async response
       }
     } catch (error) {
       logError(error, {
         component: 'Background',
-        operation: 'onMessage_CLICKED_ELEMENT',
+        operation: 'onMessage',
         metadata: { messageType: message.type }
       });
     }
@@ -46,151 +187,12 @@ export default defineBackground(() => {
     });
   });
 
+  // Context menu is still needed to trigger the page-helper flow
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
     if (info.menuItemId === "abscribex-edit-ert2oljan") {
-      try {
-        console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
-
-        const settings = await withRetry(
-          () => getSettings(),
-          3,
-          1000,
-          'Background',
-          'getSettings'
-        );
-
-        const key = generateIdentifier('popup-');
-        console.log("ABScribe: Generated key for popup data:", key);
-
-        mapTab.set(key, {
-          tabId: tab?.id,
-          target: lastClickedElement,
-        });
-
-        let content = lastClickedElement?.innerHTML || '';
-        let sanitizedContent: string;
-
-        if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
-          // For textarea, use the value property directly without HTML sanitization
-          content = lastClickedElement.value || '';
-          sanitizedContent = content.replace(/\n/g, '<br/>');
-        } else {
-          sanitizedContent = await sanitizeHTML(content);
-        }
-        console.log("ABScribe: Sanitized content for popup, content length:", sanitizedContent.length);
-
-        // Store content in chrome.ContentStorage.local instead of URL params
-        await ContentStorage.storeContent(key, sanitizedContent);
-
-        // Use settings.editorUrl without deprecated base64 content param
-        const popupUrl = new URL(settings.editorUrl);
-        popupUrl.searchParams.set('secret', settings.activationKey);
-        popupUrl.searchParams.set('key', key);
-
-        chrome.windows.create({
-          url: popupUrl.href,
-          type: 'popup',
-          width: 400,
-          height: 600
-        });
-      } catch (error) {
-        logError(error, {
-          component: 'Background',
-          operation: 'contextMenuClicked',
-          metadata: { menuItemId: info.menuItemId }
-        });
-      }
+      console.log("ABScribe: Context menu clicked - page-helper will handle the element selection.");
+      // The actual handling is now done by page-helper.content.ts
+      // which will send a REQUEST_EDITOR_WINDOW message when an element is selected
     }
   });
-
-  chrome.runtime.onMessage.addListener(
-    async (request: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-      if (request.type === MessageTypes.SYNC_CONTENT) {
-        const syncMessage = request as SyncContentMessage;
-
-        try {
-          const { content, key } = syncMessage;
-
-          console.log("Background: Received sync content message: ", { content, key });
-          const value = mapTab.get(key);
-          console.log("Background: Retrieved mapTab entry for key:", key, value);
-
-          if (value && value.tabId && content !== undefined) {
-            const { tabId, target } = value;
-            if (!target) {
-              console.warn("Background: No target element info found for key:", key);
-              const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
-                status: "error",
-                message: "Target element info missing."
-              });
-              sendResponse(errorResponse);
-              return true; // Indicate async response
-            }
-            // Pre-sanitize content in background script using offscreen API
-            const sanitizedContent = await sanitizeHTML(content);
-
-            // For textareas, we need to extract text content from HTML
-            const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
-            const textOnlyContent = await extractTextFromHTML(htmlWithLineBreaks);
-
-            await chrome.scripting.executeScript(
-              {
-                target: { tabId: tabId },
-                args: [sanitizedContent, textOnlyContent, target.classId, target.tagName],
-                func: (sanitizedHtmlContent: string, textContent: string, elementClassId: string, elementTagName: string) => {
-                  /**
-                   * Enhanced DOM update utility using ABScribeX global DOM utils
-                   */
-                  try {
-                    const elem = document.querySelector(`.${elementClassId}`) as HTMLElement;
-                    if (!elem) {
-                      console.warn("ABScribe: Target element not found with classId:", elementClassId);
-                      return;
-                    }
-
-                    // Use global ABScribeX DOM utilities (should always be available via page-helper)
-                    if (window.ABScribeX?.dom?.updateElement) {
-                      // Use the global DOM utilities from page-helper
-                      window.ABScribeX.dom.updateElement(elem, sanitizedHtmlContent, textContent);
-                      console.log("ABScribe: Content updated using global DOM utilities for element with classId:", elementClassId);
-                    } else {
-                      console.error("ABScribe: Global DOM utilities not available - page-helper may not be loaded");
-                    }
-
-                  } catch (error) {
-                    console.error("ABScribe: Error updating element:", error);
-                  }
-                },
-              }
-            );
-            console.log("Background: Content modification script executed.");
-            // Clean up stored data and map entry using ContentStorage utility
-            // await ContentStorage.removeContent(key);
-            // mapTab.delete(key);
-
-            const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {
-              status: "success",
-              message: "Content updated."
-            });
-            sendResponse(successResponse);
-          } else {
-            console.warn("Background: No tab/target info found for key, or content was undefined", { key, contentExists: content !== undefined });
-            const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
-              status: "error",
-              message: "Missing info for update."
-            });
-            sendResponse(errorResponse);
-          }
-        } catch (e: any) {
-          console.error("Background: Error processing message:", e?.message || e);
-          const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
-            status: "error",
-            message: e?.message || "Unknown error"
-          });
-          sendResponse(errorResponse);
-        }
-      }
-      return true; // Indicate async response
-    }
-  );
 });

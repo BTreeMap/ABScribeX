@@ -22,7 +22,10 @@ import { stripStego } from '@/lib/stego';
 import {
     MessageTypes,
     ClickedElementMessage,
+    RequestEditorWindowMessage,
+    SyncContentMessage,
     ClickedElementData,
+    ResponseMessage,
     createMessage,
     sendMessage
 } from '@/lib/config';
@@ -35,6 +38,12 @@ export default defineContentScript({
     world: 'MAIN',
     main() {
         console.log('ABScribe: Page helper initialized');
+
+        // Manage editor IDs that this page-helper is responsible for
+        const managedEditorIds = new Set<string>();
+
+        // Map of editor IDs to their corresponding elements
+        const editorElementMap = new Map<string, HTMLElement>();
 
         // Create page helpers with proper browser context
         const pageHelpers = createPageHelpers();
@@ -115,9 +124,91 @@ export default defineContentScript({
 
         console.log('ABScribe: Global Helper Functions Initialized', window.ABScribeX);
 
+        // Listen for SYNC_CONTENT messages directed to this page
+        chrome.runtime.onMessage.addListener(
+            async (message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+                if (message.type === MessageTypes.SYNC_CONTENT) {
+                    const syncMessage = message as SyncContentMessage;
+                    const { editorId, content } = syncMessage;
+
+                    // Only process messages for editor IDs that this page manages
+                    if (managedEditorIds.has(editorId)) {
+                        try {
+                            console.log(`ABScribe PageHelper: Processing SYNC_CONTENT for editorId: ${editorId}`);
+
+                            const targetElement = editorElementMap.get(editorId);
+                            if (!targetElement) {
+                                console.warn(`ABScribe PageHelper: Target element not found for editorId: ${editorId}`);
+                                const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+                                    status: "error",
+                                    message: "Target element not found"
+                                });
+                                sendResponse(errorResponse);
+                                return true;
+                            }
+
+                            // Ensure ABScribeX is available
+                            if (!window.ABScribeX?.dom) {
+                                console.error('ABScribe PageHelper: Global DOM utilities not available');
+                                const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+                                    status: "error",
+                                    message: "DOM utilities not available"
+                                });
+                                sendResponse(errorResponse);
+                                return true;
+                            }
+
+                            // Pre-sanitize content using the global sanitizer
+                            const sanitizedContent = await window.ABScribeX.dom.sanitizeHTML(content);
+
+                            // For textareas, we need to extract text content from HTML
+                            const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
+                            const textOnlyContent = await window.ABScribeX.dom.extractTextFromHTML(htmlWithLineBreaks);
+
+                            // Use global DOM utilities to update the element
+                            window.ABScribeX.dom.updateElement(targetElement, sanitizedContent, textOnlyContent);
+
+                            console.log(`ABScribe PageHelper: Successfully updated element for editorId: ${editorId}`);
+
+                            const successResponse = createMessage<ResponseMessage>(MessageTypes.SUCCESS, {
+                                status: "success",
+                                message: "Content updated successfully"
+                            });
+                            sendResponse(successResponse);
+
+                        } catch (error) {
+                            console.error(`ABScribe PageHelper: Error processing sync message for editorId ${editorId}:`, error);
+                            const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
+                                status: "error",
+                                message: error instanceof Error ? error.message : "Unknown error"
+                            });
+                            sendResponse(errorResponse);
+                        }
+                    }
+                    return true; // Indicate async response
+                }
+            }
+        );
+
         // Wait for global DOM utilities to be available (for other scripts)
         const waitForABScribeX = () => {
             return pageHelpers.waitForGlobal<typeof window.ABScribeX>('ABScribeX');
+        };
+
+        // Helper function to find the highest editable element in the hierarchy
+        const findHighestEditableElement = (element: HTMLElement): HTMLElement => {
+            let current = element;
+            let highestEditable = element;
+
+            // Traverse up to find the highest editable element
+            while (current.parentElement) {
+                current = current.parentElement;
+                if (window.ABScribeX?.dom?.isEditable(current)) {
+                    highestEditable = current;
+                }
+            }
+
+            return highestEditable;
         };
 
         // Context menu handler for element capture
@@ -138,50 +229,51 @@ export default defineContentScript({
                         return;
                     }
 
-                    // Generate unique class ID using global utility
-                    const classId = ABScribeX.dom.generateElementId('abscribex-');
-                    ABScribeX.dom.addElementClass(clickedElement, classId);
+                    // Find the highest editable element in the hierarchy
+                    const targetElement = findHighestEditableElement(clickedElement);
+                    console.log('ABScribe: Found target editable element:', targetElement.tagName);
 
-                    // Find the highest priority class ID by traversing up the DOM hierarchy
-                    let finalClassId = classId; // Will be the class ID we use for the element data
-                    let targetElement = clickedElement; // Element to extract data from
-
-                    // Use global utility to find existing ABScribe element
-                    const parentElement = clickedElement.parentElement;
-                    if (parentElement) {
-                        const existingABScribeElement = ABScribeX.dom.findABScribeElement(parentElement);
-                        if (existingABScribeElement) {
-                            finalClassId = existingABScribeElement.classId;
-                            targetElement = existingABScribeElement.element;
-                            console.log('ABScribe: Found higher priority ABScribe element in hierarchy. Using existing element with class:', finalClassId, 'Target element:', targetElement.tagName);
+                    // Check if this element already has an abscribex- editor ID
+                    let editorId: string | null = null;
+                    for (const className of targetElement.classList) {
+                        if (className.startsWith('abscribex-')) {
+                            editorId = className;
+                            break;
                         }
                     }
 
-                    // Find the named parent using helper function
-                    const namedParent = pageHelpers.findNamedParent(targetElement);
+                    // If no editor ID exists, create one
+                    if (!editorId) {
+                        editorId = ABScribeX.dom.generateElementId('abscribex-');
+                        ABScribeX.dom.addElementClass(targetElement, editorId);
+                        console.log('ABScribe: Assigned new editor ID:', editorId);
+                    } else {
+                        console.log('ABScribe: Using existing editor ID:', editorId);
+                    }
 
-                    const elementDetails: ClickedElementData = {
-                        tagName: targetElement.tagName,
-                        id: targetElement.id || undefined,
-                        parentId: namedParent?.id || undefined,
-                        classId: finalClassId,
-                        actualClickedElementClassId: classId,
-                        classList: Array.from(targetElement.classList),
-                        // Sanitize HTML content using the global sanitizer
-                        innerHTML: await ABScribeX.dom.sanitizeHTML(targetElement.innerHTML),
-                        textContent: targetElement.textContent,
-                        value: (targetElement as HTMLInputElement | HTMLTextAreaElement).value || undefined,
-                        src: (targetElement as HTMLImageElement | HTMLMediaElement).src || undefined,
-                        href: (targetElement as HTMLAnchorElement).href || undefined,
-                    };
+                    // Register this editor ID with this page-helper
+                    managedEditorIds.add(editorId);
+                    editorElementMap.set(editorId, targetElement);
 
-                    const message = ABScribeX.utils.createMessage(MessageTypes.CLICKED_ELEMENT, {
-                        element: elementDetails,
-                    }) as ClickedElementMessage;
+                    // Extract content from the target element
+                    let content = '';
+                    if (targetElement.tagName.toLowerCase() === 'textarea') {
+                        // For textarea, use the value property
+                        content = (targetElement as HTMLTextAreaElement).value || '';
+                    } else {
+                        // For other elements, sanitize the innerHTML
+                        content = await ABScribeX.dom.sanitizeHTML(targetElement.innerHTML);
+                    }
 
-                    console.log('ABScribe: Sending clicked element to background:', elementDetails);
+                    // Send REQUEST_EDITOR_WINDOW message to background
+                    const message = ABScribeX.utils.createMessage(MessageTypes.REQUEST_EDITOR_WINDOW, {
+                        editorId,
+                        content
+                    }) as RequestEditorWindowMessage;
 
+                    console.log('ABScribe: Requesting editor window for editorId:', editorId);
                     await ABScribeX.utils.sendMessage(message);
+
                 } catch (error) {
                     logError(error, {
                         component: 'PageHelper',
