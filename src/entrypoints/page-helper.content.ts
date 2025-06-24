@@ -12,7 +12,7 @@ import { stripStego } from '@/lib/stego';
 import {
   MessageTypes,
   RequestEditorWindowMessage,
-  ContextMenuClickedMessage,
+  // ContextMenuClickedMessage,
   SyncContentMessage,
   ResponseMessage,
   createMessage,
@@ -133,7 +133,7 @@ export default defineContentScript({
       async (message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
         // Handle context menu clicked message from background
         if (message.type === MessageTypes.CONTEXT_MENU_CLICKED) {
-          const contextMenuMessage = message as ContextMenuClickedMessage;
+          // const contextMenuMessage = message as ContextMenuClickedMessage;
           console.log('ABScribe: Context menu clicked message received, starting element capture');
 
           // Use the tracked right-clicked element if available
