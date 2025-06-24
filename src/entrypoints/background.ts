@@ -11,6 +11,8 @@ import {
 import { generateIdentifier } from '@/lib/generateIdentifier';
 import { getSettings } from '@/lib/settings';
 import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
+import { logError, withPerformanceMonitoring, withRetry } from '@/lib/errorHandler';
+import { updateElement } from '@/lib/domUtils';
 
 import { defineBackground } from 'wxt/utils/define-background';
 
@@ -21,10 +23,18 @@ export default defineBackground(() => {
   const mapTab = new Map<string, { tabId?: number; target?: ClickedElementData }>();
 
   chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-    if (message.type === MessageTypes.CLICKED_ELEMENT) {
-      const clickedMessage = message as ClickedElementMessage;
-      lastClickedElement = clickedMessage.element;
-      console.log('Background: Received clicked element:', lastClickedElement);
+    try {
+      if (message.type === MessageTypes.CLICKED_ELEMENT) {
+        const clickedMessage = message as ClickedElementMessage;
+        lastClickedElement = clickedMessage.element;
+        console.log('Background: Received clicked element:', lastClickedElement);
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'Background',
+        operation: 'onMessage_CLICKED_ELEMENT',
+        metadata: { messageType: message.type }
+      });
     }
     return true; // Keep message channel open for async response if needed
   });
@@ -39,42 +49,58 @@ export default defineBackground(() => {
 
   chrome.contextMenus.onClicked.addListener(async (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => {
     if (info.menuItemId === "abscribex-edit-ert2oljan") {
-      console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
+      try {
+        console.log("ABScribe: Context menu clicked, preparing to open editor popup.");
 
-      const settings = await getSettings();
-      const key = generateIdentifier('popup-');
-      console.log("ABScribe: Generated key for popup data:", key);
+        const settings = await withRetry(
+          () => getSettings(),
+          3,
+          1000,
+          'Background',
+          'getSettings'
+        );
 
-      mapTab.set(key, {
-        tabId: tab?.id,
-        target: lastClickedElement,
-      });
+        const key = generateIdentifier('popup-');
+        console.log("ABScribe: Generated key for popup data:", key);
 
-      let content = lastClickedElement?.innerHTML || '';
-      let sanitizedContent: string;
+        mapTab.set(key, {
+          tabId: tab?.id,
+          target: lastClickedElement,
+        });
 
-      if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
-        // For textarea, use the value property directly without HTML sanitization
-        content = lastClickedElement.value || '';
-        sanitizedContent = content.replace(/\n/g, '<br/>');
-      } else {
-        sanitizedContent = await sanitizeHTML(content);
+        let content = lastClickedElement?.innerHTML || '';
+        let sanitizedContent: string;
+
+        if (lastClickedElement?.tagName.toLowerCase() === 'textarea') {
+          // For textarea, use the value property directly without HTML sanitization
+          content = lastClickedElement.value || '';
+          sanitizedContent = content.replace(/\n/g, '<br/>');
+        } else {
+          sanitizedContent = await sanitizeHTML(content);
+        }
+        console.log("ABScribe: Sanitized content for popup, content length:", sanitizedContent.length);
+
+        // Store content in chrome.ContentStorage.local instead of URL params
+        await ContentStorage.storeContent(key, sanitizedContent);
+
+        // Use settings.editorUrl without deprecated base64 content param
+        const popupUrl = new URL(settings.editorUrl);
+        popupUrl.searchParams.set('secret', settings.activationKey);
+        popupUrl.searchParams.set('key', key);
+
+        chrome.windows.create({
+          url: popupUrl.href,
+          type: 'popup',
+          width: 400,
+          height: 600
+        });
+      } catch (error) {
+        logError(error, {
+          component: 'Background',
+          operation: 'contextMenuClicked',
+          metadata: { menuItemId: info.menuItemId }
+        });
       }
-      console.log("ABScribe: Sanitized content for popup, content length:", sanitizedContent.length);
-      // Store content in chrome.ContentStorage.local instead of URL params
-      await ContentStorage.storeContent(key, sanitizedContent);
-
-      // Use settings.editorUrl without deprecated base64 content param
-      const popupUrl = new URL(settings.editorUrl);
-      popupUrl.searchParams.set('secret', settings.activationKey);
-      popupUrl.searchParams.set('key', key);
-
-      chrome.windows.create({
-        url: popupUrl.href,
-        type: 'popup',
-        width: 400,
-        height: 600
-      });
     }
   });
 
@@ -114,82 +140,8 @@ export default defineBackground(() => {
                 args: [sanitizedContent, textOnlyContent, target.classId, target.tagName],
                 func: (sanitizedHtmlContent: string, textContent: string, elementClassId: string, elementTagName: string) => {
                   /**
-                   * Simple, framework-agnostic DOM update utility
-                   * Works with React, Vue, Angular, Svelte by using native APIs and essential events
+                   * Enhanced DOM update utility using ABScribeX DOM utils
                    */
-
-                  // Get native property setter to bypass framework wrappers
-                  function setNativeValue(element: HTMLInputElement | HTMLTextAreaElement, value: string): void {
-                    const descriptor = Object.getOwnPropertyDescriptor(element, 'value') ||
-                      Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
-
-                    if (descriptor && descriptor.set) {
-                      // Use native setter to bypass React/framework wrappers
-                      descriptor.set.call(element, value);
-                    } else {
-                      // Fallback to direct assignment
-                      element.value = value;
-                    }
-                  }
-
-                  // Trigger essential events that frameworks expect
-                  function triggerChangeEvents(element: HTMLElement, inputValue?: string): void {
-                    // Create and dispatch input event (modern standard)
-                    const inputEvent = new InputEvent('input', {
-                      bubbles: true,
-                      cancelable: false,
-                      inputType: 'insertText',
-                      data: inputValue || null,
-                      composed: true
-                    });
-                    element.dispatchEvent(inputEvent);
-
-                    // Create and dispatch change event (traditional)
-                    const changeEvent = new Event('change', {
-                      bubbles: true,
-                      cancelable: true
-                    });
-                    element.dispatchEvent(changeEvent);
-                  }
-
-                  // Update form inputs (input, textarea)
-                  function updateFormInput(element: HTMLInputElement | HTMLTextAreaElement, value: string): void {
-                    // Focus element to ensure it's active
-                    element.focus();
-
-                    // Set value using native setter
-                    setNativeValue(element, value);
-
-                    // Trigger events that frameworks listen for
-                    triggerChangeEvents(element, value);
-
-                    // Brief blur to commit the change
-                    setTimeout(() => element.blur(), 10);
-                  }
-
-                  // Update contenteditable elements
-                  function updateContentEditable(element: HTMLElement, content: string): void {
-                    // Focus the element
-                    element.focus();
-
-                    // Update content
-                    element.innerHTML = content;
-
-                    // Place cursor at end of content
-                    const selection = window.getSelection();
-                    if (selection) {
-                      const range = document.createRange();
-                      range.selectNodeContents(element);
-                      range.collapse(false); // Collapse to end
-                      selection.removeAllRanges();
-                      selection.addRange(range);
-                    }
-
-                    // Trigger change events
-                    triggerChangeEvents(element);
-                  }
-
-                  // Main execution
                   try {
                     const elem = document.querySelector(`.${elementClassId}`) as HTMLElement;
                     if (!elem) {
@@ -197,26 +149,68 @@ export default defineBackground(() => {
                       return;
                     }
 
-                    // Ensure element is visible
-                    if (elem.style.display === 'none') {
-                      elem.style.display = '';
+                    // Import the updateElement function (simplified inline version)
+                    function updateElementInline(element: HTMLElement, content: string, textContent: string, tagName: string) {
+                      // Ensure element is visible
+                      if (element.style.display === 'none') {
+                        element.style.display = '';
+                      }
+
+                      const tag = tagName.toLowerCase();
+
+                      if (tag === 'textarea' || tag === 'input') {
+                        // Enhanced form input handling
+                        const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
+
+                        // Focus element
+                        inputElement.focus();
+
+                        // Get native setter
+                        const descriptor = Object.getOwnPropertyDescriptor(inputElement, 'value') ||
+                          Object.getOwnPropertyDescriptor(Object.getPrototypeOf(inputElement), 'value');
+
+                        if (descriptor && descriptor.set) {
+                          descriptor.set.call(inputElement, textContent);
+                        } else {
+                          inputElement.value = textContent;
+                        }
+
+                        // Trigger comprehensive events
+                        const events = [
+                          new InputEvent('input', { bubbles: true, cancelable: false, inputType: 'insertText', data: textContent, composed: true }),
+                          new Event('change', { bubbles: true, cancelable: true }),
+                          new FocusEvent('blur', { bubbles: true, cancelable: true })
+                        ];
+
+                        events.forEach(event => inputElement.dispatchEvent(event));
+
+                      } else if (element.contentEditable === 'true' || element.isContentEditable) {
+                        // Enhanced contenteditable handling
+                        element.focus();
+                        element.innerHTML = content;
+
+                        // Set cursor at end
+                        const selection = window.getSelection();
+                        if (selection) {
+                          const range = document.createRange();
+                          range.selectNodeContents(element);
+                          range.collapse(false);
+                          selection.removeAllRanges();
+                          selection.addRange(range);
+                        }
+
+                        // Trigger events
+                        element.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }));
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+
+                      } else {
+                        // Simple HTML update for other elements
+                        element.innerHTML = content;
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+                      }
                     }
 
-                    const tagName = elementTagName.toLowerCase();
-
-                    // Determine element type and update accordingly
-                    if (tagName === 'textarea' || tagName === 'input') {
-                      // Handle form inputs
-                      updateFormInput(elem as HTMLInputElement | HTMLTextAreaElement, textContent);
-                    } else if (elem.contentEditable === 'true' || elem.isContentEditable) {
-                      // Handle contenteditable elements
-                      updateContentEditable(elem, sanitizedHtmlContent);
-                    } else {
-                      // Handle other elements (divs, spans, etc.) - simple assignment
-                      elem.innerHTML = sanitizedHtmlContent;
-                      triggerChangeEvents(elem);
-                    }
-
+                    updateElementInline(elem, sanitizedHtmlContent, textContent, elementTagName);
                     console.log("ABScribe: Content updated for element with classId:", elementClassId);
 
                   } catch (error) {

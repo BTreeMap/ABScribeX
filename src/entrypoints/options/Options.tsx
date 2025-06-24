@@ -9,6 +9,7 @@ import {
   getPerformanceMetrics,
   PerformanceMetrics
 } from '@/lib/settings';
+import { getDiagnosticInfo } from '@/lib/errorHandler';
 
 function Options() {
   const [settings, setSettings] = useState<ExtensionSettings>(defaultSettings);
@@ -17,12 +18,27 @@ function Options() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [isClearing, setIsClearing] = useState(false);
   const [clearStatus, setClearStatus] = useState<'idle' | 'cleared' | 'error'>('idle');
+  const [diagnosticInfo, setDiagnosticInfo] = useState<{
+    errorLogs: any[];
+    performanceLogs: any[];
+    storageUsage: number;
+  } | null>(null);
 
-  // Load settings on component mount
+  // Load settings and performance metrics on component mount
   useEffect(() => {
     getSettings().then(setSettings);
     getPerformanceMetrics().then(setPerformanceMetrics);
   }, []);
+
+  // Load diagnostic info on demand
+  const loadDiagnosticInfo = async () => {
+    try {
+      const info = await getDiagnosticInfo();
+      setDiagnosticInfo(info);
+    } catch (error) {
+      console.error('Failed to load diagnostic info:', error);
+    }
+  };
 
   const handleInputChange = (key: keyof ExtensionSettings, value: any) => {
     setSettings(prev => ({
@@ -250,6 +266,36 @@ function Options() {
             </ul>
             <p><strong>Note:</strong> Your extension settings will not be affected as they are stored separately.</p>
           </div>
+        </section>
+
+        <section className="settings-section diagnostics-section">
+          <h2>Diagnostics</h2>
+          <p>View diagnostic information and performance metrics</p>
+
+          <button type="button" onClick={loadDiagnosticInfo} className="load-diagnostics-button">
+            Load Diagnostic Info
+          </button>
+
+          {diagnosticInfo && (
+            <div className="diagnostic-info">
+              <h3>Diagnostic Information:</h3>
+              <div className="diagnostic-data">
+                <div>
+                  <strong>Error Logs:</strong> {diagnosticInfo.errorLogs.length} entries
+                </div>
+                <div>
+                  <strong>Performance Logs:</strong> {diagnosticInfo.performanceLogs.length} entries
+                </div>
+                <div>
+                  <strong>Storage Usage:</strong> {(diagnosticInfo.storageUsage / 1024).toFixed(2)} KB
+                </div>
+                <details className="diagnostic-details">
+                  <summary>View Raw Data</summary>
+                  <pre>{JSON.stringify(diagnosticInfo, null, 2)}</pre>
+                </details>
+              </div>
+            </div>
+          )}
         </section>
       </main>
 
