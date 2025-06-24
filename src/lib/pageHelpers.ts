@@ -1,25 +1,25 @@
 /**
  * ABScribeX Page Helper Functions
- * This module contains helper functions for page-level DOM manipulation and framework event handling
- * Uses closure pattern to capture browser context once during initialization for optimal performance
+ * This module consolidates all page-level helper functions and delegates DOM operations to domUtils
+ * Uses closure pattern with proper context injection for optimal performance
  * 
- * Key Performance Optimizations:
- * - Browser context (document, window) captured once via closure - no runtime checks
- * - Native value setters pre-captured for React compatibility 
- * - No static method overhead - functions are created with bound context
- * - Batched DOM operations use captured requestAnimationFrame reference
- * - All functions operate with zero overhead context access
+ * Architecture: domUtils (DOM operations) -> pageHelpers (consolidation + page-specific logic) -> page-helper.content.ts
+ * 
+ * Key Improvements in This Refactor:
+ * - Eliminated code duplication between domUtils and pageHelpers
+ * - domUtils is now the single source of truth for all DOM operations
+ * - pageHelpers focuses on ABScribe-specific logic and utility functions
+ * - Proper context injection ensures no reliance on global variables
+ * - Clean separation of concerns with delegation pattern
+ * 
+ * Performance Optimizations:
+ * - Browser context captured once via closure - no runtime checks
+ * - DOM operations delegated to context-aware domUtils factory
+ * - ABScribe-specific helpers (element finding, class management) layered on top
+ * - Utilities (sleep, global waiting) provided at this level
  */
 
-import { getElementInfo, type DOMUpdateOptions } from '@/lib/domUtils';
-
-/**
- * Browser context interface for dependency injection
- */
-export interface BrowserContext {
-    document: Document;
-    window: Window;
-}
+import { createDOMUtils, type DOMUpdateOptions, type BrowserContext } from '@/lib/domUtils';
 
 /**
  * Factory function to create context-aware helper instances using closure pattern
@@ -34,69 +34,10 @@ export function createPageHelpers(context?: BrowserContext) {
         throw new Error('Page helpers can only be created in browser context');
     }
 
-    // Pre-capture native setters for performance optimization
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+    // Create DOM utilities with the captured context
+    const domUtils = createDOMUtils({ document: doc, window: win });
 
-    // All functions below have access to doc, win, and native setters via closure
-    // No more runtime checks needed!
-
-    const triggerFrameworkEvents = (element: HTMLElement, inputValue?: string): void => {
-        const events = [
-            new InputEvent('input', {
-                bubbles: true,
-                cancelable: false,
-                inputType: 'insertText',
-                data: inputValue || null,
-                composed: true
-            }),
-            new Event('change', {
-                bubbles: true,
-                cancelable: true
-            }),
-            new FocusEvent('blur', {
-                bubbles: true,
-                cancelable: true
-            })
-        ];
-
-        events.forEach(event => {
-            try {
-                element.dispatchEvent(event);
-            } catch (error) {
-                console.error('ABScribe: Error triggering framework event:', error);
-            }
-        });
-    };
-
-    const setNativeValue = (element: HTMLInputElement | HTMLTextAreaElement, value: string): void => {
-        try {
-            if (element instanceof HTMLInputElement && nativeInputValueSetter) {
-                nativeInputValueSetter.call(element, value);
-            } else if (element instanceof HTMLTextAreaElement && nativeTextAreaValueSetter) {
-                nativeTextAreaValueSetter.call(element, value);
-            } else {
-                // Fallback method
-                let descriptor = Object.getOwnPropertyDescriptor(element, 'value');
-                if (!descriptor || !descriptor.set) {
-                    descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
-                }
-                if (descriptor && descriptor.set) {
-                    descriptor.set.call(element, value);
-                } else {
-                    element.value = value;
-                }
-            }
-        } catch (error) {
-            console.error('ABScribe: Error setting native value:', error);
-            element.value = value; // Ultimate fallback
-        }
-    };
-
-    const isEditable = (element: HTMLElement): boolean => {
-        const elementInfo = getElementInfo(element);
-        return elementInfo.isEditable;
-    };
+    // ABScribe-specific helper functions that build on top of domUtils
 
     const addElementClass = (element: HTMLElement, classId: string): void => {
         if (!element.classList.contains(classId)) {
@@ -137,147 +78,6 @@ export function createPageHelpers(context?: BrowserContext) {
         return namedParent;
     };
 
-    const setCursorAtEnd = (element: HTMLElement): void => {
-        const selection = win.getSelection();
-        if (selection) {
-            const range = doc.createRange();
-            range.selectNodeContents(element);
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-    };
-
-    const updateElement = (element: HTMLElement, content: string, textContent?: string, options: DOMUpdateOptions = {}): void => {
-        const elementInfo = getElementInfo(element);
-
-        // Ensure element is visible
-        if (element.style.display === 'none') {
-            element.style.display = '';
-        }
-
-        if (elementInfo.isFormInput) {
-            const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
-
-            if (options.focusAfterUpdate !== false) {
-                inputElement.focus();
-            }
-
-            setNativeValue(inputElement, textContent || content);
-
-            if (options.triggerEvents !== false) {
-                triggerFrameworkEvents(inputElement, textContent || content);
-            }
-        } else if (elementInfo.isContentEditable) {
-            if (options.focusAfterUpdate !== false) {
-                element.focus();
-            }
-
-            element.innerHTML = content;
-            
-            // Only set cursor at end if explicitly requested (defaults to false for better UX)
-            if (options.setCursorAtEnd === true) {
-                setCursorAtEnd(element);
-            }
-
-            if (options.triggerEvents !== false) {
-                triggerFrameworkEvents(element);
-            }
-        } else {
-            element.innerHTML = content;
-            if (options.triggerEvents !== false) {
-                triggerFrameworkEvents(element);
-            }
-        }
-    };
-
-    const updateFormInput = (element: HTMLInputElement | HTMLTextAreaElement, value: string, options: DOMUpdateOptions = {}): void => {
-        if (options.focusAfterUpdate !== false) {
-            element.focus();
-        }
-
-        setNativeValue(element, value);
-
-        if (options.triggerEvents !== false) {
-            triggerFrameworkEvents(element, value);
-        }
-    };
-
-    const updateContentEditable = (element: HTMLElement, content: string, options: DOMUpdateOptions = {}): void => {
-        if (options.focusAfterUpdate !== false) {
-            element.focus();
-        }
-
-        element.innerHTML = content;
-        
-        // Only set cursor at end if explicitly requested (defaults to false for better UX)
-        if (options.setCursorAtEnd === true) {
-            setCursorAtEnd(element);
-        }
-
-        if (options.triggerEvents !== false) {
-            triggerFrameworkEvents(element);
-        }
-    };
-
-    const findElementWithRetry = async (selector: string, maxAttempts: number = 5, delay: number = 100): Promise<HTMLElement | null> => {
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const element = doc.querySelector(selector) as HTMLElement;
-            if (element) {
-                return element;
-            }
-
-            if (attempt < maxAttempts - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-        return null;
-    };
-
-    // Batching with closure-captured requestAnimationFrame
-    let domOperations: (() => void)[] = [];
-    let batchScheduled = false;
-
-    const scheduleBatch = (): void => {
-        if (!batchScheduled) {
-            batchScheduled = true;
-            win.requestAnimationFrame(() => {
-                const ops = [...domOperations];
-                domOperations.length = 0;
-                batchScheduled = false;
-
-                ops.forEach(op => {
-                    try {
-                        op();
-                    } catch (error) {
-                        console.error('ABScribe: Error in batched DOM operation:', error);
-                    }
-                });
-            });
-        }
-    };
-
-    const batchDOMUpdates = (updates: (() => void)[]): void => {
-        domOperations.push(...updates);
-        scheduleBatch();
-    };
-
-    const flushDOMBatch = (): void => {
-        if (domOperations.length > 0) {
-            const ops = [...domOperations];
-            domOperations.length = 0;
-            batchScheduled = false;
-
-            ops.forEach(op => {
-                try {
-                    op();
-                } catch (error) {
-                    console.error('ABScribe: Error in flushed DOM operation:', error);
-                }
-            });
-        }
-    };
-
     const sleep = (ms: number): Promise<void> => {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
@@ -308,31 +108,32 @@ export function createPageHelpers(context?: BrowserContext) {
         });
     };
 
-    // Return object with all functions having captured context via closure
+    // Return consolidated helpers that combine domUtils functionality with ABScribe-specific logic
     return {
-        // Framework event handling
-        triggerFrameworkEvents,
-        setNativeValue,
+        // Delegate core DOM operations to domUtils (single source of truth)
+        getElementInfo: domUtils.getElementInfo,
+        updateElement: domUtils.updateElement,
+        updateFormInput: domUtils.updateFormInput,
+        updateContentEditable: domUtils.updateContentEditable,
+        findElementWithRetry: domUtils.findElementWithRetry,
+        batchDOMUpdates: domUtils.batchDOMUpdates,
+        flushDOMBatch: domUtils.flushDOMBatch,
 
-        // Element management
-        isEditable,
+        // Framework event handling (delegated to domUtils)
+        triggerFrameworkEvents: domUtils.triggerFrameworkEvents,
+        setNativeValue: domUtils.setNativeValue,
+
+        // ABScribe-specific element management
         addElementClass,
         findABScribeElement,
         findNamedParent,
 
-        // DOM manipulation
-        updateElement,
-        updateFormInput,
-        updateContentEditable,
-        findElementWithRetry,
-
-        // Batching
-        batchDOMUpdates,
-        flushDOMBatch,
-
-        // Utilities
+        // Page-level utilities
         sleep,
-        waitForGlobal
+        waitForGlobal,
+
+        // Convenience method for checking if element is editable
+        isEditable: (element: HTMLElement) => domUtils.getElementInfo(element).isEditable
     };
 }
 
