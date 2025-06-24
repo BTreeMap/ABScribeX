@@ -3,26 +3,26 @@
  */
 export const MessageTypes = {
     // Content script to background messages
-    REQUEST_EDITOR_WINDOW: 'kr9n1dmuahhflff8dia8sn1kuj2p4f4kt',
+    REQUEST_EDITOR_WINDOW: 'ksuejap7q1qrn24t1oqbosgqh0ru9p9vf',
 
     // Background to page-helper messages
-    CONTEXT_MENU_CLICKED: 'kl8m3q9f7r2t5w6x1z4a8c9d2e5h7j0k',
+    CONTEXT_MENU_CLICKED: 'kb4c243ru67dda0d90te02utp6t9surr7',
 
     // Direct page-helper to abscribe-frontend communication
-    SYNC_CONTENT: 'kkv54gn4p049hgucu8ouenjlm8bgdm1b1',
+    SYNC_CONTENT: 'korc3gfusaaaqkj04iu8sg0nthmm3pago',
 
     // Service worker to offscreen document messages
-    SANITIZE_HTML: 'kdcept35l383b0ghrg0b14kr8huq1c43a',
-    EXTRACT_TEXT: 'k8h8sqp73psd7fivnklvpl3i65s5qb6e2',
-    PING_OFFSCREEN: 'ks5aae0o5ck3b2phohebenr36j9sodcml',
+    SANITIZE_HTML: 'ki62kejirgrp4s7fvone5if6t8ejk0igj',
+    EXTRACT_TEXT: 'ksk55p60tahb0j22gb836no4ifilhp16a',
+    PING_OFFSCREEN: 'kqivlim7q0tnbankjul0v5ph6uq7nlm4e',
 
     // Response types
-    SUCCESS: 'k5rmqq7keoairttogvcj85sa6p57dunvc',
-    ERROR: 'ktpsfphjd2q6n4m82dt5fpooapi9j2tkn',
+    SUCCESS: 'kulme66lsgvhl36o90krmr3mriq1ohi1b',
+    ERROR: 'ktr50fh11jaan26ktcthrdnqr9sk20cb8',
 } as const;
 
 export const ContextMenuItemTypes = {
-    EDIT_WITH_ABSCRIBE: 'kt9kj30qu6s9ddr1bnhplksudvktg6o0e',
+    EDIT_WITH_ABSCRIBE: 'kj23obmm38v7vspni9197ulv19ntpiu2v',
 }
 
 /**
