@@ -24,7 +24,7 @@ export default defineBackground(() => {
     windowId: number;
     originTabId: number;
   }
-  
+
   const activeEditorWindows = new Map<string, EditorWindowInfo>(); // editorId -> {windowId, originTabId}
 
   /**
@@ -42,7 +42,7 @@ export default defineBackground(() => {
     try {
       // Look up the editor window info to get the originating tab
       const editorInfo = activeEditorWindows.get(editorId);
-      
+
       if (!editorInfo) {
         const errorResponse = createMessage<ResponseMessage>(MessageTypes.ERROR, {
           status: "error",
