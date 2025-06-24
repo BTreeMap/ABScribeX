@@ -173,7 +173,9 @@ const initializeEditorInteraction = async () => {
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     } else {
-        editorTarget.innerHTML = stripStego(initialContent);
+        // Sanitize content before setting innerHTML for security
+        const sanitizedContent = await sanitizeHTML(stripStego(initialContent));
+        editorTarget.innerHTML = sanitizedContent;
     }
 
     if (editorTarget) {

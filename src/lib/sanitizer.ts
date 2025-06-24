@@ -119,21 +119,80 @@ async function extractTextInOffscreen(html: string): Promise<string> {
 }
 
 /**
- * Sanitize HTML content safely in any environment
+ * Sanitization options for different element types
  */
-export const sanitizeHTML = withPerformanceMonitoring(
-    async (html: string, options?: any): Promise<string> => {
+export interface SanitizationOptions {
+    elementType?: string;
+    dompurifyOptions?: any;
+}
+
+/**
+ * Rich content type that tracks content state, element context, and sanitization options
+ * Can contain either sanitized or unsanitized content - check isSanitized flag
+ */
+export interface ContentWithMetadata {
+    content: string;
+    elementType?: string;
+    isSanitized: boolean;
+    originalLength?: number;
+    sanitizedAt?: number;
+    dompurifyOptions?: any;
+}
+
+/**
+ * Create a ContentWithMetadata object
+ */
+export function createContentWithMetadata(
+    content: string,
+    elementType?: string,
+    isSanitized: boolean = false,
+    dompurifyOptions?: any
+): ContentWithMetadata {
+    return {
+        content,
+        elementType,
+        isSanitized,
+        originalLength: content.length,
+        sanitizedAt: isSanitized ? Date.now() : undefined,
+        dompurifyOptions
+    };
+}
+
+/**
+ * Type guard to check if input is ContentWithMetadata
+ */
+export function isContentWithMetadata(input: any): input is ContentWithMetadata {
+    return input && typeof input === 'object' &&
+        'content' in input && 'isSanitized' in input;
+}
+
+/**
+ * Core sanitization function that performs the actual sanitization work
+ */
+const performSanitization = withPerformanceMonitoring(
+    async (html: string, elementType?: string, dompurifyOptions?: any): Promise<string> => {
         if (!html) return '';
+
+        // For textarea elements, don't apply DOMPurify as it will destroy content
+        if (elementType?.toLowerCase() === 'textarea') {
+            // For textarea, just do basic escaping to prevent XSS
+            return html
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+        }
 
         return safeAsync(
             async () => {
                 if (hasDOMAccess()) {
                     // Browser/content script environment - use DOMPurify directly
-                    return DOMPurify.sanitize(html, options) as unknown as string;
+                    return DOMPurify.sanitize(html, dompurifyOptions) as unknown as string;
                 } else if (isServiceWorker()) {
                     // Service worker environment - use offscreen document with retry
                     return await withRetry(
-                        () => sanitizeInOffscreen(html, options),
+                        () => sanitizeInOffscreen(html, dompurifyOptions),
                         3,
                         1000,
                         'Sanitizer',
@@ -153,14 +212,53 @@ export const sanitizeHTML = withPerformanceMonitoring(
                 .replace(/'/g, '&#x27;'),
             {
                 component: 'Sanitizer',
-                operation: 'sanitizeHTML',
-                metadata: { htmlLength: html.length, hasOptions: !!options }
+                operation: 'performSanitization',
+                metadata: {
+                    htmlLength: html.length,
+                    elementType
+                }
             }
         );
     },
     'Sanitizer',
-    'sanitizeHTML'
+    'performSanitization'
 );
+
+/**
+ * Smart sanitization function that handles both string and ContentWithMetadata inputs
+ * Returns the same type as input (string -> string, ContentWithMetadata -> ContentWithMetadata)
+ */
+export async function sanitizeHTML(input: string, options?: SanitizationOptions): Promise<string>;
+export async function sanitizeHTML(input: ContentWithMetadata, options?: SanitizationOptions): Promise<ContentWithMetadata>;
+export async function sanitizeHTML(
+    input: string | ContentWithMetadata,
+    options?: SanitizationOptions
+): Promise<string | ContentWithMetadata> {
+    // Handle ContentWithMetadata input
+    if (isContentWithMetadata(input)) {
+        // If already sanitized, return as-is
+        if (input.isSanitized) {
+            return input;
+        }
+
+        // Sanitize and return updated ContentWithMetadata
+        const sanitizedContent = await performSanitization(
+            input.content,
+            input.elementType || options?.elementType,
+            input.dompurifyOptions || options?.dompurifyOptions
+        );
+
+        return {
+            ...input,
+            content: sanitizedContent,
+            isSanitized: true,
+            sanitizedAt: Date.now()
+        };
+    }
+
+    // Handle string input
+    return performSanitization(input, options?.elementType, options?.dompurifyOptions);
+}
 
 /**
  * Extract text content from HTML safely in any environment

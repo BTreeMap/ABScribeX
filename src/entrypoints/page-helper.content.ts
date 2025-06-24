@@ -5,19 +5,9 @@
  */
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import {
-    getElementInfo,
-    updateElement,
-    updateFormInput,
-    updateContentEditable,
-    findElementWithRetry,
-    batchDOMUpdates,
-    flushDOMBatch,
-    type DOMUpdateOptions,
-    type ElementInfo
-} from '@/lib/domUtils';
+import { type DOMUpdateOptions, type ElementInfo } from '@/lib/domUtils';
 import { generateIdentifier } from '@/lib/generateIdentifier';
-import { sanitizeHTML, extractTextFromHTML } from '@/lib/sanitizer';
+import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata, type SanitizationOptions, type ContentWithMetadata } from '@/lib/sanitizer';
 import { stripStego } from '@/lib/stego';
 import {
     MessageTypes,
@@ -65,7 +55,7 @@ export default defineContentScript({
         // Populate the global DOM utilities object
         window.ABScribeX.dom = {
             // Element detection and information
-            getElementInfo,
+            getElementInfo: pageHelpers.getElementInfo,
             isEditable: pageHelpers.isEditable,
             findElementWithRetry: pageHelpers.findElementWithRetry,
 
@@ -89,12 +79,21 @@ export default defineContentScript({
 
             // Content processing utilities
             stripStego,
-            sanitizeHTML: async (html: string, options?: any) => {
+            sanitizeHTML: async (input: any, options?: any) => {
                 try {
-                    return await sanitizeHTML(html, options);
+                    if (isContentWithMetadata(input)) {
+                        const result = await sanitizeHTML(input, options);
+                        return isContentWithMetadata(result) ? result.content : result;
+                    } else {
+                        return await sanitizeHTML(input as string, options);
+                    }
                 } catch (error) {
                     console.error('ABScribe: Error sanitizing HTML:', error);
-                    return html.replace(/<[^>]*>/g, '');
+                    if (typeof input === 'string') {
+                        return input.replace(/<[^>]*>/g, '');
+                    } else {
+                        return input.content.replace(/<[^>]*>/g, '');
+                    }
                 }
             },
             extractTextFromHTML: async (html: string) => {
@@ -159,7 +158,8 @@ export default defineContentScript({
                             }
 
                             // Pre-sanitize content using the global sanitizer
-                            const sanitizedContent = await window.ABScribeX.dom.sanitizeHTML(content);
+                            // Content coming from background is already sanitized, so use it directly
+                            const sanitizedContent = content; // Already sanitized by background script
 
                             // For textareas, we need to extract text content from HTML
                             const htmlWithLineBreaks = content.replace(/<br\s*\/?>/gi, '\r\n').replace(/<\/p>/gi, '</p>\r\n');
@@ -255,20 +255,26 @@ export default defineContentScript({
                     managedEditorIds.add(editorId);
                     editorElementMap.set(editorId, targetElement);
 
-                    // Extract content from the target element
-                    let content = '';
-                    if (targetElement.tagName.toLowerCase() === 'textarea') {
-                        // For textarea, use the value property
-                        content = (targetElement as HTMLTextAreaElement).value || '';
+                    // Extract content from the target element and create ContentWithMetadata
+                    let contentWithMetadata: ContentWithMetadata;
+                    const elementType = targetElement.tagName.toLowerCase();
+
+                    if (elementType === 'textarea') {
+                        // For textarea, use the value property (already safe, no sanitization needed)
+                        const rawContent = (targetElement as HTMLTextAreaElement).value || '';
+                        contentWithMetadata = createContentWithMetadata(rawContent, elementType, true);
                     } else {
-                        // For other elements, sanitize the innerHTML
-                        content = await ABScribeX.dom.sanitizeHTML(targetElement.innerHTML);
+                        // For other elements, create unsanitized content first, then sanitize
+                        const rawContent = targetElement.innerHTML || '';
+                        const unsanitizedContent = createContentWithMetadata(rawContent, elementType, false);
+                        // Use the direct sanitizeHTML function, not the global wrapper
+                        contentWithMetadata = await sanitizeHTML(unsanitizedContent) as ContentWithMetadata;
                     }
 
                     // Send REQUEST_EDITOR_WINDOW message to background
                     const message = ABScribeX.utils.createMessage(MessageTypes.REQUEST_EDITOR_WINDOW, {
                         editorId,
-                        content
+                        content: contentWithMetadata.content  // Send the actual content string
                     }) as RequestEditorWindowMessage;
 
                     console.log('ABScribe: Requesting editor window for editorId:', editorId);

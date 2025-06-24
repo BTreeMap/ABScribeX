@@ -418,15 +418,3 @@ export function createDOMUtils(context?: BrowserContext) {
         flushDOMBatch
     };
 }
-
-// Legacy exports for backward compatibility - these use global context
-// TODO: These should be deprecated in favor of the factory function
-const legacyDOMUtils = createDOMUtils();
-
-export const getElementInfo = legacyDOMUtils.getElementInfo;
-export const updateElement = legacyDOMUtils.updateElement;
-export const updateFormInput = legacyDOMUtils.updateFormInput;
-export const updateContentEditable = legacyDOMUtils.updateContentEditable;
-export const findElementWithRetry = legacyDOMUtils.findElementWithRetry;
-export const batchDOMUpdates = legacyDOMUtils.batchDOMUpdates;
-export const flushDOMBatch = legacyDOMUtils.flushDOMBatch;
