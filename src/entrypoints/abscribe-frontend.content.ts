@@ -119,10 +119,17 @@ const initializeEditorInteraction = async () => {
             const currentUrl = new URL(location.href);
 
             // Set hash directly to /document/{oid}
-            currentUrl.hash = `/document/${extractedOid}`;
+            const expectedHash = `/document/${extractedOid}`;
+            if (currentUrl.hash !== expectedHash) {
+                currentUrl.hash = `/document/${extractedOid}`;
 
-            console.log(`ABScribe: Found oid in stego data: ${extractedOid}, updating URL to: ${currentUrl.href}`);
-            window.history.replaceState(null, '', currentUrl.href);
+                console.log(`ABScribe: Found oid in stego data: ${extractedOid}, updating URL to: ${currentUrl.href}`);
+                // Reload the page with the new hash
+                window.location.href = currentUrl.href;
+            }
+            else {
+                console.log(`ABScribe: Oid already matches URL hash: ${currentUrl.hash}`);
+            }
 
             return extractedOid
         }
