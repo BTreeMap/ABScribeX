@@ -6,7 +6,7 @@
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { generateIdentifier } from '@/lib/generateIdentifier';
-import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata } from '@/lib/sanitizer';
+import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata, ABSCRIBEX_SANITIZATION_CONFIG } from '@/lib/sanitizer';
 import { stripStego } from '@/lib/stego';
 import {
   MessageTypes,
@@ -299,7 +299,7 @@ export default defineContentScript({
           // Extract content from the target element and create ContentWithMetadata
           const elementType = targetElement.tagName.toLowerCase();
           const rawContent = extractContent(targetElement);
-          const contentWithMetadata = await ABScribeX.dom.sanitizeHTML(createContentWithMetadata(rawContent, elementType));
+          const contentWithMetadata = await ABScribeX.dom.sanitizeHTML(createContentWithMetadata(rawContent, elementType), ABSCRIBEX_SANITIZATION_CONFIG);
 
           // Send REQUEST_EDITOR_WINDOW message to background
           const message = ABScribeX.utils.createMessage(MessageTypes.REQUEST_EDITOR_WINDOW, {

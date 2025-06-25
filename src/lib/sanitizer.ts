@@ -7,6 +7,7 @@
  */
 
 import DOMPurify from 'dompurify';
+import { type Config } from 'dompurify';
 import {
     MessageTypes,
     createMessage,
@@ -125,7 +126,7 @@ async function extractTextInOffscreen(html: string): Promise<string> {
  */
 export interface SanitizationOptions {
     elementType?: string;
-    dompurifyOptions?: any;
+    dompurifyOptions?: Config;
 }
 
 /**
@@ -231,16 +232,20 @@ export async function sanitizeHTML(
             return input;
         }
 
+        const elementType = input.elementType || options?.elementType || 'div'; // Default to 'div' if not specified
+        const dompurifyOptions = input.dompurifyOptions || options?.dompurifyOptions;
         // Sanitize and return updated ContentWithMetadata
         const sanitizedContent = await performSanitization(
             input.content,
-            input.elementType || options?.elementType,
-            input.dompurifyOptions || options?.dompurifyOptions
+            elementType,
+            dompurifyOptions,
         );
 
         return {
             ...input,
             content: sanitizedContent,
+            elementType,
+            dompurifyOptions,
             isSanitized: true,
             sanitizedAt: Date.now()
         };
@@ -292,3 +297,16 @@ export const extractTextFromHTML = withPerformanceMonitoring(
     'Sanitizer',
     'extractTextFromHTML'
 );
+
+/**
+ * DOMPurify configuration optimized for ABScribeX's content processing needs
+ * - Preserves essential HTML structure for content analysis
+ * - Removes potentially dangerous attributes while maintaining readability
+ * - Configured for safe display in extension UI components
+ */
+export const ABSCRIBEX_SANITIZATION_CONFIG: SanitizationOptions = {
+    dompurifyOptions: {
+        USE_PROFILES: { html: true },
+        FORBID_ATTR: ['style']
+    }
+};
