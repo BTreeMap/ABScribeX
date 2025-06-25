@@ -521,13 +521,14 @@ export function createDialogUtils(context?: BrowserContext) {
      * Show a choice dialog specifically for document overwrite scenarios
      */
     const showDocumentOverwriteDialog = (documentId: string): Promise<boolean> => {
+        console.log(`Showing document overwrite dialog for document ID: ${documentId}`);
         return showConfirmDialog(
-            'Document Already Exists',
-            `Document "${documentId}" already exists in the cloud.\n\nChoose an action:`,
+            'Content Conflict Detected',
+            `The content in ABScribe differs from what's currently on the webpage.\n\nChoose which version to keep:`,
             {
                 type: 'warning',
-                confirmText: 'Overwrite with Page Content',
-                cancelText: 'Keep Cloud Content',
+                confirmText: 'Use Webpage Content',
+                cancelText: 'Keep ABScribe Content',
                 timeout: 30000 // 30 second timeout
             }
         );
