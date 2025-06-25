@@ -169,7 +169,8 @@ const performSanitization = withPerformanceMonitoring(
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#x27;');
+                .replace(/'/g, '&#x27;')
+                .replace(/\n/g, '<br />'); // Preserve newlines as <br> tags
         }
 
         return safeAsync(
@@ -197,8 +198,7 @@ const performSanitization = withPerformanceMonitoring(
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#x27;')
-                .replace(/\n/g, '<br/>'), // Preserve newlines as <br> tags
+                .replace(/'/g, '&#x27;'),
             {
                 component: 'Sanitizer',
                 operation: 'performSanitization',

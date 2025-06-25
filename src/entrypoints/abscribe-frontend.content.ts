@@ -62,7 +62,7 @@ const initializeEditorInteraction = async () => {
     // The key is now the editorId directly
     const editorId = key;
 
-    const initialContentWithMetadata = await (async (): Promise<ContentWithMetadata> => {
+    const initialContentWithMetadata: ContentWithMetadata = await (async (): Promise<ContentWithMetadata> => {
         try {
             // Use the centralized ContentStorage utility to get content
             const storedContentWithMetadata = await ContentStorage.getContent(editorId);
@@ -70,11 +70,11 @@ const initializeEditorInteraction = async () => {
                 return storedContentWithMetadata;
             } else {
                 console.warn(`ABScribe: Content not found in local ContentStorage for editorId ${editorId}.`);
-                return createContentWithMetadata('<p>No content found.</p>', 'p', false);
+                return createContentWithMetadata('<p>No content found.</p>', 'p');
             }
         } catch (e) {
             console.error('ABScribe: Failed to retrieve content from ContentStorage.', e);
-            return createContentWithMetadata('<p>Error retrieving content.</p>', 'p', false);
+            return createContentWithMetadata('<p>Error retrieving content.</p>', 'p');
         }
     })()
 
@@ -154,14 +154,14 @@ const initializeEditorInteraction = async () => {
         }
     }
 
-    const sanitizedContent = (await sanitizeHTML(initialContentWithMetadata)).content;
+    const sanitizedText = (await sanitizeHTML(initialContentWithMetadata)).content;
 
     if (!editorTarget) {
         console.error('ABScribe: No suitable editor target element found (#editor-container or TinyMCE). Creating a fallback textarea.');
         const fallbackTextarea = document.createElement('textarea');
         fallbackTextarea.style.width = '95%';
         fallbackTextarea.style.height = '300px';
-        fallbackTextarea.value = stripStego(sanitizedContent);
+        fallbackTextarea.value = stripStego(sanitizedText);
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     }
@@ -169,7 +169,7 @@ const initializeEditorInteraction = async () => {
     if (editorTarget) {
         if (shouldOverwrite) {
             // Only overwrite if user chose to do so
-            editorTarget.innerHTML = stripStego(sanitizedContent);
+            editorTarget.innerHTML = stripStego(sanitizedText);
         }
 
         // Performance monitoring for self-adjusting sync frequency

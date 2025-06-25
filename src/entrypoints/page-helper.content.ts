@@ -297,20 +297,9 @@ export default defineContentScript({
           editorElementMap.set(editorId, targetElement);
 
           // Extract content from the target element and create ContentWithMetadata
-          let contentWithMetadata: ContentWithMetadata;
           const elementType = targetElement.tagName.toLowerCase();
-
-          if (elementType === 'textarea') {
-            // For textarea, use the value property (already safe, no sanitization needed)
-            const rawContent = (targetElement as HTMLTextAreaElement).value || '';
-            contentWithMetadata = createContentWithMetadata(rawContent, elementType, true);
-          } else {
-            // For other elements, create unsanitized content first, then sanitize
-            const rawContent = targetElement.innerHTML || '';
-            const unsanitizedContent = createContentWithMetadata(rawContent, elementType, false);
-            // Use the direct sanitizeHTML function, not the global wrapper
-            contentWithMetadata = await sanitizeHTML(unsanitizedContent) as ContentWithMetadata;
-          }
+          const rawContent: string = elementType === 'textarea' ? ((targetElement as HTMLTextAreaElement).value || '') : (targetElement.innerHTML || '');
+          const contentWithMetadata = await ABScribeX.dom.sanitizeHTML(createContentWithMetadata(rawContent, elementType));
 
           // Send REQUEST_EDITOR_WINDOW message to background
           const message = ABScribeX.utils.createMessage(MessageTypes.REQUEST_EDITOR_WINDOW, {

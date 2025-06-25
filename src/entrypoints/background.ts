@@ -109,12 +109,7 @@ export default defineBackground(() => {
 
     // Store content using the editorId as the key
     // Content is already ContentWithMetadata, ensure it's sanitized
-    let sanitizedContent: ContentWithMetadata;
-    if (content.isSanitized) {
-      sanitizedContent = content;
-    } else {
-      sanitizedContent = await sanitizeHTML(content) as ContentWithMetadata;
-    }
+    const sanitizedContent: ContentWithMetadata = await sanitizeHTML(content);
     await ContentStorage.storeContent(editorId, sanitizedContent);
 
     // Create editor URL with editorId instead of random key
