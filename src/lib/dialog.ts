@@ -489,8 +489,8 @@ export function createDialogUtils(context?: BrowserContext) {
     /**
      * Show a confirmation dialog (like the original showChoiceDialog)
      */
-    const showConfirmDialog = (title: string, message: string, options?: Partial<DialogOptions>): Promise<boolean> => {
-        return showDialog({
+    const showConfirmDialog = async (title: string, message: string, options?: Partial<DialogOptions>): Promise<boolean> => {
+        const result = await showDialog({
             title,
             message,
             type: 'question',
@@ -498,21 +498,23 @@ export function createDialogUtils(context?: BrowserContext) {
             cancelText: 'Cancel',
             showCancel: true,
             ...options
-        }).then(result => result.confirmed);
+        });
+        return result.confirmed;
     };
 
     /**
      * Show an alert dialog
      */
-    const showAlert = (title: string, message: string, options?: Partial<DialogOptions>): Promise<void> => {
-        return showDialog({
+    const showAlert = async (title: string, message: string, options?: Partial<DialogOptions>): Promise<void> => {
+        await showDialog({
             title,
             message,
             type: 'info',
             confirmText: 'OK',
             showCancel: false,
             ...options
-        }).then(() => void 0);
+        });
+        return;
     };
 
     /**
