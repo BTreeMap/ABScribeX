@@ -6,6 +6,7 @@ import {
     createMessage,
     sendMessage,
     ContentStorage,
+    ContentWithMetadata,
 } from '@/lib/config';
 import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
 import { encode, stripStego, extractStego } from '@/lib/stego';
@@ -61,25 +62,27 @@ const initializeEditorInteraction = async () => {
     // The key is now the editorId directly
     const editorId = key;
 
-    let initialContent = '<p>Loading content...</p>';
-    try {
-        // Use the centralized ContentStorage utility to get content
-        const storedContentWithMetadata = await ContentStorage.getContent(editorId);
-        if (storedContentWithMetadata) {
-            initialContent = storedContentWithMetadata.content;
-        } else {
-            console.warn(`ABScribe: Content not found in local ContentStorage for editorId ${editorId}.`);
-            initialContent = '<p>Error: No content found.</p>';
+    const initialContentWithMetadata = await (async (): Promise<ContentWithMetadata> => {
+        try {
+            // Use the centralized ContentStorage utility to get content
+            const storedContentWithMetadata = await ContentStorage.getContent(editorId);
+            if (storedContentWithMetadata) {
+                return storedContentWithMetadata;
+            } else {
+                console.warn(`ABScribe: Content not found in local ContentStorage for editorId ${editorId}.`);
+                return createContentWithMetadata('<p>No content found.</p>', 'p', false);
+            }
+        } catch (e) {
+            console.error('ABScribe: Failed to retrieve content from ContentStorage.', e);
+            return createContentWithMetadata('<p>Error retrieving content.</p>', 'p', false);
         }
-    } catch (e) {
-        console.error('ABScribe: Failed to retrieve content from ContentStorage.', e);
-        initialContent = '<p>Error retrieving content.</p>';
-    }
+    })()
+
     // The initial content is already sanitized in the background script
-    console.log('ABScribe: Initial content loaded, length:', initialContent.length);
+    console.log('ABScribe: Initial content retrieved from ContentStorage:', initialContentWithMetadata);
 
     // Extract existing stego data from the initial content to check for an oid
-    const existingStegoData = extractStego(initialContent);
+    const existingStegoData = extractStego(initialContentWithMetadata.content);
     const extractedOid = existingStegoData?.oid;
 
     const [oid, shouldOverwrite]: [string, boolean] = await (async (): Promise<[string, boolean]> => {
@@ -151,12 +154,14 @@ const initializeEditorInteraction = async () => {
         }
     }
 
+    const sanitizedContent = (await sanitizeHTML(initialContentWithMetadata)).content;
+
     if (!editorTarget) {
         console.error('ABScribe: No suitable editor target element found (#editor-container or TinyMCE). Creating a fallback textarea.');
         const fallbackTextarea = document.createElement('textarea');
         fallbackTextarea.style.width = '95%';
         fallbackTextarea.style.height = '300px';
-        fallbackTextarea.value = stripStego(initialContent);
+        fallbackTextarea.value = stripStego(sanitizedContent);
         document.body.appendChild(fallbackTextarea);
         editorTarget = fallbackTextarea;
     }
@@ -164,8 +169,7 @@ const initializeEditorInteraction = async () => {
     if (editorTarget) {
         if (shouldOverwrite) {
             // Only overwrite if user chose to do so
-            const sanitizedContent = await sanitizeHTML(stripStego(initialContent));
-            editorTarget.innerHTML = sanitizedContent;
+            editorTarget.innerHTML = stripStego(sanitizedContent);
         }
 
         // Performance monitoring for self-adjusting sync frequency

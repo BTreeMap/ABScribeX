@@ -198,7 +198,7 @@ const performSanitization = withPerformanceMonitoring(
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#x27;')
-                .replace(/\n/g, '<br />'), // Preserve newlines as <br> tags
+                .replace(/\n/g, '<br/>'), // Preserve newlines as <br> tags
             {
                 component: 'Sanitizer',
                 operation: 'performSanitization',
