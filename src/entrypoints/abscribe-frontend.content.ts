@@ -13,6 +13,8 @@ import { encode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings, savePerformanceMetrics } from '@/lib/settings';
 import { sleep } from '@/lib/utils';
 import { createDialogUtils } from '@/lib/dialog';
+import { extractContent } from '@/lib/utils';
+
 console.log('ABScribe: abscribe-frontend logic loaded (content script context).');
 
 const trigger = (keyword: string): void => {
@@ -249,9 +251,7 @@ const initializeEditorInteraction = async () => {
             const startTime = performance.now();
 
             try {
-                const currentHTML = (editorTarget as HTMLTextAreaElement).value !== undefined ?
-                    (editorTarget as HTMLTextAreaElement).value :
-                    editorTarget.innerHTML;
+                const currentHTML = extractContent(editorTarget);
                 const baseContent = currentHTML;
                 const stegoData = { oid: oid };
                 const filteredContent = await sanitizeHTML(baseContent);

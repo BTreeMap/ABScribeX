@@ -5,7 +5,7 @@
  */
 
 import { logError, withPerformanceMonitoring, logPerformance } from '@/lib/errorHandler';
-import { sleep } from '@/lib/utils';
+import { sleep, isEditableFormElementTag } from '@/lib/utils';
 
 export interface DOMUpdateOptions {
     focusAfterUpdate?: boolean;
@@ -98,7 +98,7 @@ export function createDOMUtils(context?: BrowserContext) {
      */
     const getElementInfo = (element: HTMLElement): ElementInfo => {
         const tagName = element.tagName.toLowerCase();
-        const isFormInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+        const isFormInput = isEditableFormElementTag(tagName);
         const isContentEditable = element.contentEditable === 'true' || element.isContentEditable;
         const isEditable = isFormInput || isContentEditable;
 

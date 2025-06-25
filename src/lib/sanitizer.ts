@@ -20,6 +20,7 @@ import {
 } from '@/lib/config';
 import { generateIdentifier } from '@/lib/generateIdentifier';
 import { logError, withPerformanceMonitoring, withRetry, safeAsync } from '@/lib/errorHandler';
+import { isEditableFormElementTag } from '@/lib/utils';
 
 // Global state management
 let offscreenDocumentReady = false;
@@ -162,7 +163,7 @@ const performSanitization = withPerformanceMonitoring(
         if (!html) return '';
 
         // For textarea elements, don't apply DOMPurify as it will destroy content
-        if (elementType?.toLowerCase() === 'textarea') {
+        if (isEditableFormElementTag(elementType)) {
             // For textarea, just do basic escaping to prevent XSS
             return html
                 .replace(/&/g, '&amp;')

@@ -6,7 +6,6 @@
 
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { generateIdentifier } from '@/lib/generateIdentifier';
-import { type ContentWithMetadata } from '@/lib/config';
 import { sanitizeHTML, extractTextFromHTML, createContentWithMetadata, isContentWithMetadata } from '@/lib/sanitizer';
 import { stripStego } from '@/lib/stego';
 import {
@@ -20,6 +19,7 @@ import {
 } from '@/lib/config';
 import { logError, withPerformanceMonitoring } from '@/lib/errorHandler';
 import { createPageHelpers } from '@/lib/pageHelpers';
+import { extractContent } from '@/lib/utils';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -298,7 +298,7 @@ export default defineContentScript({
 
           // Extract content from the target element and create ContentWithMetadata
           const elementType = targetElement.tagName.toLowerCase();
-          const rawContent: string = elementType === 'textarea' ? ((targetElement as HTMLTextAreaElement).value || '') : (targetElement.innerHTML || '');
+          const rawContent = extractContent(targetElement);
           const contentWithMetadata = await ABScribeX.dom.sanitizeHTML(createContentWithMetadata(rawContent, elementType));
 
           // Send REQUEST_EDITOR_WINDOW message to background
