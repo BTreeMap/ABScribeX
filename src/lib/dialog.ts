@@ -15,52 +15,52 @@
 import { BrowserContext } from './domUtils';
 
 export interface DialogOptions {
-    title: string;
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    type?: 'info' | 'warning' | 'error' | 'success' | 'question';
-    showCancel?: boolean;
-    timeout?: number; // Auto-close after N milliseconds
-    onShow?: () => void;
-    onHide?: () => void;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  type?: 'info' | 'warning' | 'error' | 'success' | 'question';
+  showCancel?: boolean;
+  timeout?: number; // Auto-close after N milliseconds
+  onShow?: () => void;
+  onHide?: () => void;
 }
 
 export interface DialogResult {
-    confirmed: boolean;
-    cancelled: boolean;
-    timedOut: boolean;
+  confirmed: boolean;
+  cancelled: boolean;
+  timedOut: boolean;
 }
 
 /**
  * Factory function to create dialog utilities with injected browser context
  */
 export function createDialogUtils(context?: BrowserContext) {
-    // Capture browser context once using closure
-    const doc = context?.document || (typeof document !== 'undefined' ? document : null);
-    const win = context?.window || (typeof window !== 'undefined' ? window : null);
+  // Capture browser context once using closure
+  const doc = context?.document || (typeof document !== 'undefined' ? document : null);
+  const win = context?.window || (typeof window !== 'undefined' ? window : null);
 
-    if (!doc || !win) {
-        throw new Error('Dialog utilities can only be created in browser context');
+  if (!doc || !win) {
+    throw new Error('Dialog utilities can only be created in browser context');
+  }
+
+  // Unique ID counter for multiple dialogs
+  let dialogCounter = 0;
+
+  /**
+   * Create and inject CSS styles for the dialog
+   */
+  const injectStyles = (): void => {
+    const styleId = 'abscribe-dialog-styles';
+
+    // Check if styles already exist
+    if (doc.getElementById(styleId)) {
+      return;
     }
 
-    // Unique ID counter for multiple dialogs
-    let dialogCounter = 0;
-
-    /**
-     * Create and inject CSS styles for the dialog
-     */
-    const injectStyles = (): void => {
-        const styleId = 'abscribe-dialog-styles';
-
-        // Check if styles already exist
-        if (doc.getElementById(styleId)) {
-            return;
-        }
-
-        const style = doc.createElement('style');
-        style.id = styleId;
-        style.textContent = `
+    const style = doc.createElement('style');
+    style.id = styleId;
+    style.textContent = `
       /* ABScribeX Dialog Styles */
       .abscribe-dialog-overlay {
         position: fixed;
@@ -74,6 +74,8 @@ export function createDialogUtils(context?: BrowserContext) {
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
         opacity: 0;
         transition: opacity 0.3s ease;
         animation: abscribe-fade-in 0.3s ease forwards;
@@ -85,20 +87,24 @@ export function createDialogUtils(context?: BrowserContext) {
         border-radius: 16px;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         max-width: 480px;
-        width: 90%;
-        max-height: 90vh;
+        width: 100%;
+        max-height: calc(100vh - 40px);
         overflow: hidden;
         transform: scale(0.9) translateY(20px);
         transition: transform 0.3s ease;
         animation: abscribe-scale-in 0.3s ease forwards;
         border: 1px solid #e5e7eb;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
       }
 
       .abscribe-dialog-header {
-        padding: 24px 24px 0 24px;
+        padding: 24px 24px 16px 24px;
         display: flex;
         align-items: flex-start;
         gap: 16px;
+        flex-shrink: 0;
       }
 
       .abscribe-dialog-icon {
@@ -139,6 +145,7 @@ export function createDialogUtils(context?: BrowserContext) {
 
       .abscribe-dialog-content {
         flex: 1;
+        min-width: 0;
       }
 
       .abscribe-dialog-title {
@@ -146,7 +153,8 @@ export function createDialogUtils(context?: BrowserContext) {
         font-size: 20px;
         font-weight: 600;
         color: #111827;
-        line-height: 1.2;
+        line-height: 1.3;
+        word-wrap: break-word;
       }
 
       .abscribe-dialog-message {
@@ -155,14 +163,20 @@ export function createDialogUtils(context?: BrowserContext) {
         color: #6b7280;
         line-height: 1.5;
         white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       .abscribe-dialog-footer {
-        padding: 24px;
+        padding: 16px 24px 24px 24px;
         display: flex;
         gap: 12px;
         justify-content: flex-end;
+        align-items: center;
         flex-wrap: wrap;
+        flex-shrink: 0;
+        border-top: 1px solid #f3f4f6;
+        margin-top: auto;
       }
 
       .abscribe-dialog-button {
@@ -174,11 +188,14 @@ export function createDialogUtils(context?: BrowserContext) {
         transition: all 0.2s ease;
         border: 2px solid transparent;
         outline: none;
-        min-width: 80px;
+        min-width: 100px;
+        height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
+        text-align: center;
+        white-space: nowrap;
       }
 
       .abscribe-dialog-button:focus {
@@ -260,23 +277,40 @@ export function createDialogUtils(context?: BrowserContext) {
 
       /* Responsive design */
       @media (max-width: 640px) {
+        .abscribe-dialog-overlay {
+          padding: 16px;
+        }
+
         .abscribe-dialog {
-          width: 95%;
+          width: 100%;
           max-width: none;
-          margin: 20px;
+          max-height: calc(100vh - 32px);
         }
 
         .abscribe-dialog-header {
-          padding: 20px 20px 0 20px;
+          padding: 20px 20px 16px 20px;
+          gap: 12px;
+        }
+
+        .abscribe-dialog-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 20px;
+        }
+
+        .abscribe-dialog-title {
+          font-size: 18px;
         }
 
         .abscribe-dialog-footer {
-          padding: 20px;
-          flex-direction: column;
+          padding: 16px 20px 20px 20px;
+          flex-direction: column-reverse;
+          gap: 8px;
         }
 
         .abscribe-dialog-button {
           width: 100%;
+          min-width: unset;
         }
       }
 
@@ -295,6 +329,10 @@ export function createDialogUtils(context?: BrowserContext) {
           color: #d1d5db;
         }
 
+        .abscribe-dialog-footer {
+          border-top-color: #374151;
+        }
+
         .abscribe-dialog-button.secondary {
           color: #d1d5db;
           border-color: #4b5563;
@@ -308,239 +346,239 @@ export function createDialogUtils(context?: BrowserContext) {
       }
     `;
 
-        doc.head.appendChild(style);
-    };
+    doc.head.appendChild(style);
+  };
 
-    /**
-     * Get icon for dialog type
-     */
-    const getIconForType = (type: DialogOptions['type']): string => {
-        switch (type) {
-            case 'info': return 'ℹ️';
-            case 'warning': return '⚠️';
-            case 'error': return '❌';
-            case 'success': return '✅';
-            case 'question': return '❓';
-            default: return 'ℹ️';
+  /**
+   * Get icon for dialog type
+   */
+  const getIconForType = (type: DialogOptions['type']): string => {
+    switch (type) {
+      case 'info': return 'ℹ️';
+      case 'warning': return '⚠️';
+      case 'error': return '❌';
+      case 'success': return '✅';
+      case 'question': return '❓';
+      default: return 'ℹ️';
+    }
+  };
+
+  /**
+   * Create and show a modern dialog
+   */
+  const showDialog = (options: DialogOptions): Promise<DialogResult> => {
+    return new Promise((resolve) => {
+      // Inject styles
+      injectStyles();
+
+      // Generate unique dialog ID
+      const dialogId = `abscribe-dialog-${++dialogCounter}`;
+
+      // Create dialog elements
+      const overlay = doc.createElement('div');
+      overlay.className = 'abscribe-dialog-overlay';
+      overlay.id = dialogId;
+
+      const dialog = doc.createElement('div');
+      dialog.className = 'abscribe-dialog';
+      dialog.setAttribute('role', 'dialog');
+      dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-labelledby', `${dialogId}-title`);
+      dialog.setAttribute('aria-describedby', `${dialogId}-message`);
+
+      const header = doc.createElement('div');
+      header.className = 'abscribe-dialog-header';
+
+      const icon = doc.createElement('div');
+      icon.className = `abscribe-dialog-icon ${options.type || 'info'}`;
+      icon.textContent = getIconForType(options.type);
+
+      const content = doc.createElement('div');
+      content.className = 'abscribe-dialog-content';
+
+      const title = doc.createElement('h2');
+      title.className = 'abscribe-dialog-title';
+      title.id = `${dialogId}-title`;
+      title.textContent = options.title;
+
+      const message = doc.createElement('p');
+      message.className = 'abscribe-dialog-message';
+      message.id = `${dialogId}-message`;
+      message.textContent = options.message;
+
+      const footer = doc.createElement('div');
+      footer.className = 'abscribe-dialog-footer';
+
+      // Build dialog structure
+      content.appendChild(title);
+      content.appendChild(message);
+      header.appendChild(icon);
+      header.appendChild(content);
+      dialog.appendChild(header);
+
+      // Timeout handling
+      let timeoutId: number | null = null;
+      let isResolved = false;
+
+      // Store current focus to restore later
+      const previousActiveElement = doc.activeElement as HTMLElement;
+
+      // Cleanup function to restore focus
+      const originalResolve = resolve;
+      const cleanupAndResolve = (result: DialogResult) => {
+        doc.removeEventListener('keydown', handleKeyDown);
+        if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
+          try {
+            previousActiveElement.focus();
+          } catch (e) {
+            // Ignore focus errors
+          }
         }
-    };
+        originalResolve(result);
+      };
 
-    /**
-     * Create and show a modern dialog
-     */
-    const showDialog = (options: DialogOptions): Promise<DialogResult> => {
-        return new Promise((resolve) => {
-            // Inject styles
-            injectStyles();
+      // Override the resolve calls to use cleanup function
+      const resolveWithCleanup = (result: DialogResult) => {
+        if (isResolved) return;
+        isResolved = true;
 
-            // Generate unique dialog ID
-            const dialogId = `abscribe-dialog-${++dialogCounter}`;
+        if (timeoutId) {
+          win.clearTimeout(timeoutId);
+        }
 
-            // Create dialog elements
-            const overlay = doc.createElement('div');
-            overlay.className = 'abscribe-dialog-overlay';
-            overlay.id = dialogId;
+        options.onHide?.();
 
-            const dialog = doc.createElement('div');
-            dialog.className = 'abscribe-dialog';
-            dialog.setAttribute('role', 'dialog');
-            dialog.setAttribute('aria-modal', 'true');
-            dialog.setAttribute('aria-labelledby', `${dialogId}-title`);
-            dialog.setAttribute('aria-describedby', `${dialogId}-message`);
+        // Animate out
+        overlay.style.animation = 'abscribe-fade-in 0.2s ease reverse forwards';
+        dialog.style.animation = 'abscribe-scale-out 0.2s ease forwards';
 
-            const header = doc.createElement('div');
-            header.className = 'abscribe-dialog-header';
+        setTimeout(() => {
+          if (overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+          cleanupAndResolve(result);
+        }, 200);
+      };
 
-            const icon = doc.createElement('div');
-            icon.className = `abscribe-dialog-icon ${options.type || 'info'}`;
-            icon.textContent = getIconForType(options.type);
+      const resolveDialog = resolveWithCleanup;
 
-            const content = doc.createElement('div');
-            content.className = 'abscribe-dialog-content';
-
-            const title = doc.createElement('h2');
-            title.className = 'abscribe-dialog-title';
-            title.id = `${dialogId}-title`;
-            title.textContent = options.title;
-
-            const message = doc.createElement('p');
-            message.className = 'abscribe-dialog-message';
-            message.id = `${dialogId}-message`;
-            message.textContent = options.message;
-
-            const footer = doc.createElement('div');
-            footer.className = 'abscribe-dialog-footer';
-
-            // Build dialog structure
-            content.appendChild(title);
-            content.appendChild(message);
-            header.appendChild(icon);
-            header.appendChild(content);
-            dialog.appendChild(header);
-
-            // Timeout handling
-            let timeoutId: number | null = null;
-            let isResolved = false;
-
-            // Store current focus to restore later
-            const previousActiveElement = doc.activeElement as HTMLElement;
-
-            // Cleanup function to restore focus
-            const originalResolve = resolve;
-            const cleanupAndResolve = (result: DialogResult) => {
-                doc.removeEventListener('keydown', handleKeyDown);
-                if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
-                    try {
-                        previousActiveElement.focus();
-                    } catch (e) {
-                        // Ignore focus errors
-                    }
-                }
-                originalResolve(result);
-            };
-
-            // Override the resolve calls to use cleanup function
-            const resolveWithCleanup = (result: DialogResult) => {
-                if (isResolved) return;
-                isResolved = true;
-
-                if (timeoutId) {
-                    win.clearTimeout(timeoutId);
-                }
-
-                options.onHide?.();
-
-                // Animate out
-                overlay.style.animation = 'abscribe-fade-in 0.2s ease reverse forwards';
-                dialog.style.animation = 'abscribe-scale-out 0.2s ease forwards';
-
-                setTimeout(() => {
-                    if (overlay.parentNode) {
-                        overlay.parentNode.removeChild(overlay);
-                    }
-                    cleanupAndResolve(result);
-                }, 200);
-            };
-
-            const resolveDialog = resolveWithCleanup;
-
-            // Create buttons
-            if (options.showCancel !== false) {
-                const cancelButton = doc.createElement('button');
-                cancelButton.className = 'abscribe-dialog-button secondary';
-                cancelButton.textContent = options.cancelText || 'Cancel';
-                cancelButton.addEventListener('click', () => {
-                    resolveDialog({ confirmed: false, cancelled: true, timedOut: false });
-                });
-                footer.appendChild(cancelButton);
-            }
-
-            const confirmButton = doc.createElement('button');
-            confirmButton.className = 'abscribe-dialog-button primary';
-            confirmButton.textContent = options.confirmText || 'OK';
-            confirmButton.addEventListener('click', () => {
-                resolveDialog({ confirmed: true, cancelled: false, timedOut: false });
-            });
-            footer.appendChild(confirmButton);
-
-            dialog.appendChild(footer);
-            overlay.appendChild(dialog);
-
-            // Keyboard handling
-            const handleKeyDown = (e: KeyboardEvent) => {
-                if (e.key === 'Escape' && options.showCancel !== false) {
-                    e.preventDefault();
-                    resolveDialog({ confirmed: false, cancelled: true, timedOut: false });
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    resolveDialog({ confirmed: true, cancelled: false, timedOut: false });
-                }
-            };
-
-            // Click outside to close (if cancel is allowed)
-            const handleOverlayClick = (e: MouseEvent) => {
-                if (e.target === overlay && options.showCancel !== false) {
-                    resolveDialog({ confirmed: false, cancelled: true, timedOut: false });
-                }
-            };
-
-            // Set up event listeners
-            doc.addEventListener('keydown', handleKeyDown);
-            overlay.addEventListener('click', handleOverlayClick);
-
-            // Setup timeout
-            if (options.timeout && options.timeout > 0) {
-                timeoutId = win.setTimeout(() => {
-                    resolveDialog({ confirmed: false, cancelled: false, timedOut: true });
-                }, options.timeout);
-            }
-
-            // Add to DOM and focus
-            doc.body.appendChild(overlay);
-
-            // Focus management
-            setTimeout(() => {
-                confirmButton.focus();
-                options.onShow?.();
-            }, 100);
+      // Create buttons
+      if (options.showCancel !== false) {
+        const cancelButton = doc.createElement('button');
+        cancelButton.className = 'abscribe-dialog-button secondary';
+        cancelButton.textContent = options.cancelText || 'Cancel';
+        cancelButton.addEventListener('click', () => {
+          resolveDialog({ confirmed: false, cancelled: true, timedOut: false });
         });
-    };
+        footer.appendChild(cancelButton);
+      }
 
-    /**
-     * Show a confirmation dialog (like the original showChoiceDialog)
-     */
-    const showConfirmDialog = async (title: string, message: string, options?: Partial<DialogOptions>): Promise<boolean> => {
-        const result = await showDialog({
-            title,
-            message,
-            type: 'question',
-            confirmText: 'OK',
-            cancelText: 'Cancel',
-            showCancel: true,
-            ...options
-        });
-        return result.confirmed;
-    };
+      const confirmButton = doc.createElement('button');
+      confirmButton.className = 'abscribe-dialog-button primary';
+      confirmButton.textContent = options.confirmText || 'OK';
+      confirmButton.addEventListener('click', () => {
+        resolveDialog({ confirmed: true, cancelled: false, timedOut: false });
+      });
+      footer.appendChild(confirmButton);
 
-    /**
-     * Show an alert dialog
-     */
-    const showAlert = async (title: string, message: string, options?: Partial<DialogOptions>): Promise<void> => {
-        await showDialog({
-            title,
-            message,
-            type: 'info',
-            confirmText: 'OK',
-            showCancel: false,
-            ...options
-        });
-        return;
-    };
+      dialog.appendChild(footer);
+      overlay.appendChild(dialog);
 
-    /**
-     * Show a choice dialog specifically for document overwrite scenarios
-     */
-    const showDocumentOverwriteDialog = (documentId: string): Promise<boolean> => {
-        console.log(`Showing document overwrite dialog for document ID: ${documentId}`);
-        return showConfirmDialog(
-            'Content Conflict Detected',
-            `The content in ABScribe differs from what's currently on the webpage.\n\nChoose which version to keep:`,
-            {
-                type: 'warning',
-                confirmText: 'Use Webpage Content',
-                cancelText: 'Keep ABScribe Content',
-                timeout: 30000 // 30 second timeout
-            }
-        );
-    };
+      // Keyboard handling
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && options.showCancel !== false) {
+          e.preventDefault();
+          resolveDialog({ confirmed: false, cancelled: true, timedOut: false });
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          resolveDialog({ confirmed: true, cancelled: false, timedOut: false });
+        }
+      };
 
-    return {
-        showDialog,
-        showConfirmDialog,
-        showAlert,
-        showDocumentOverwriteDialog,
-        injectStyles
-    };
+      // Click outside to close (if cancel is allowed)
+      const handleOverlayClick = (e: MouseEvent) => {
+        if (e.target === overlay && options.showCancel !== false) {
+          resolveDialog({ confirmed: false, cancelled: true, timedOut: false });
+        }
+      };
+
+      // Set up event listeners
+      doc.addEventListener('keydown', handleKeyDown);
+      overlay.addEventListener('click', handleOverlayClick);
+
+      // Setup timeout
+      if (options.timeout && options.timeout > 0) {
+        timeoutId = win.setTimeout(() => {
+          resolveDialog({ confirmed: false, cancelled: false, timedOut: true });
+        }, options.timeout);
+      }
+
+      // Add to DOM and focus
+      doc.body.appendChild(overlay);
+
+      // Focus management
+      setTimeout(() => {
+        confirmButton.focus();
+        options.onShow?.();
+      }, 100);
+    });
+  };
+
+  /**
+   * Show a confirmation dialog (like the original showChoiceDialog)
+   */
+  const showConfirmDialog = async (title: string, message: string, options?: Partial<DialogOptions>): Promise<boolean> => {
+    const result = await showDialog({
+      title,
+      message,
+      type: 'question',
+      confirmText: 'OK',
+      cancelText: 'Cancel',
+      showCancel: true,
+      ...options
+    });
+    return result.confirmed;
+  };
+
+  /**
+   * Show an alert dialog
+   */
+  const showAlert = async (title: string, message: string, options?: Partial<DialogOptions>): Promise<void> => {
+    await showDialog({
+      title,
+      message,
+      type: 'info',
+      confirmText: 'OK',
+      showCancel: false,
+      ...options
+    });
+    return;
+  };
+
+  /**
+   * Show a choice dialog specifically for document overwrite scenarios
+   */
+  const showDocumentOverwriteDialog = (documentId: string): Promise<boolean> => {
+    console.log(`Showing document overwrite dialog for document ID: ${documentId}`);
+    return showConfirmDialog(
+      'Content Conflict Detected',
+      `The content in ABScribe differs from what's currently on the webpage.\n\nChoose which version to keep:`,
+      {
+        type: 'warning',
+        confirmText: 'Use Webpage Content',
+        cancelText: 'Keep ABScribe Content',
+        timeout: 30000 // 30 second timeout
+      }
+    );
+  };
+
+  return {
+    showDialog,
+    showConfirmDialog,
+    showAlert,
+    showDocumentOverwriteDialog,
+    injectStyles
+  };
 }
 
 // Default export for use in browser context
