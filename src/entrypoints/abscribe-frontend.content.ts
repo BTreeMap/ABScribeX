@@ -8,7 +8,7 @@ import {
     ContentStorage,
     ContentWithMetadata,
 } from '@/lib/config';
-import { sanitizeHTML, createContentWithMetadata } from '@/lib/sanitizer';
+import { sanitizeHTML, createContentWithMetadata, ABSCRIBEX_SANITIZATION_CONFIG } from '@/lib/sanitizer';
 import { encode, stripStego, extractStego } from '@/lib/stego';
 import { getSettings, savePerformanceMetrics } from '@/lib/settings';
 import { sleep } from '@/lib/utils';
@@ -254,7 +254,7 @@ const initializeEditorInteraction = async () => {
                 const currentHTML = extractContent(editorTarget);
                 const baseContent = currentHTML;
                 const stegoData = { oid: oid };
-                const filteredContent = await sanitizeHTML(baseContent);
+                const filteredContent = await sanitizeHTML(baseContent, ABSCRIBEX_SANITIZATION_CONFIG);
                 await sync(filteredContent + encode(JSON.stringify(stegoData)), editorId);
 
                 const processingTime = performance.now() - startTime;
