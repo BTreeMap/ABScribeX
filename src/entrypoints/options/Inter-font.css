@@ -2,7 +2,7 @@
 /* Local font embedding for Chrome extension */
 @font-face {
     font-family: 'Inter';
-    src: url('../../assets/Inter-Regular.ttf') format('truetype');
+    src: url('../../assets/fonts/Inter-Regular.ttf') format('truetype');
     font-weight: 300 400 500 600 700;
     font-style: normal;
     font-display: swap;
@@ -11,7 +11,7 @@
 
 @font-face {
     font-family: 'Inter';
-    src: url('../../assets/Inter-Italic.ttf') format('truetype');
+    src: url('../../assets/fonts/Inter-Italic.ttf') format('truetype');
     font-weight: 300 400 500 600 700;
     font-style: italic;
     font-display: swap;
