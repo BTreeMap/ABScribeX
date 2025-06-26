@@ -117,12 +117,19 @@ export default defineBackground(() => {
     popupUrl.searchParams.set('secret', settings.activationKey);
     popupUrl.searchParams.set('key', editorId); // Use editorId as the key
 
-    // Create new editor window
+    // Get validated window size from settings
+    const windowSize = settings.windowSize || {
+      width: 800,
+      height: 700,
+      preset: 'medium'
+    };
+
+    // Create new editor window with configured size
     const window = await chrome.windows.create({
       url: popupUrl.href,
       type: 'popup',
-      width: 400,
-      height: 600
+      width: windowSize.width,
+      height: windowSize.height
     });
 
     if (window.id && sender.tab?.id) {

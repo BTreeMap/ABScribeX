@@ -572,7 +572,94 @@ body {
   max-height: 300px;
 }
 
-/* Responsive Design */
+/* Window Size Configuration Styles */
+.window-size-controls {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.preset-selector {
+  margin-bottom: 1.5rem;
+}
+
+.preset-selector label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.preset-selector select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: var(--background-white);
+  transition: all 0.2s ease;
+}
+
+.preset-selector select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-size-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.size-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.size-input-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.size-input-group input {
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: var(--background-white);
+  transition: all 0.2s ease;
+}
+
+.size-input-group input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.window-size-info {
+  background-color: var(--background-white);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent-color);
+}
+
+.window-size-info small {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.window-size-info strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .options-container {
     margin: 0;
@@ -616,6 +703,15 @@ body {
     align-self: flex-end;
     width: auto;
     padding: 0.5rem 1rem;
+  }
+
+  .custom-size-inputs {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .window-size-controls {
+    padding: 1rem;
   }
 }
 

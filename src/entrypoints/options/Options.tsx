@@ -220,6 +220,99 @@ function Options() {
             </label>
             <small>Automatically save changes as you type</small>
           </div>
+
+          <div className="setting-item">
+            <h3>Editor Window Size</h3>
+            <div className="window-size-controls">
+              <div className="preset-selector">
+                <label htmlFor="windowPreset">Quick Presets</label>
+                <select
+                  id="windowPreset"
+                  value={settings.windowSize?.preset || 'large'}
+                  onChange={(e) => {
+                    const preset = e.target.value as 'small' | 'medium' | 'large' | 'extra-large' | 'custom';
+                    let newWindowSize;
+
+                    switch (preset) {
+                      case 'small':
+                        newWindowSize = { width: 600, height: 500, preset };
+                        break;
+                      case 'medium':
+                        newWindowSize = { width: 800, height: 700, preset };
+                        break;
+                      case 'large':
+                        newWindowSize = { width: 1200, height: 900, preset };
+                        break;
+                      case 'extra-large':
+                        newWindowSize = { width: 1600, height: 1200, preset };
+                        break;
+                      default:
+                        newWindowSize = settings.windowSize || { width: 1200, height: 900, preset: 'custom' };
+                    }
+
+                    handleInputChange('windowSize', newWindowSize);
+                  }}
+                >
+                  <option value="small">Small (600×500)</option>
+                  <option value="medium">Medium (800×700)</option>
+                  <option value="large">Large (1200×900) - Recommended</option>
+                  <option value="extra-large">Extra Large (1600×1200)</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <small>Choose from predefined window sizes or set custom dimensions</small>
+              </div>
+
+              <div className="custom-size-inputs">
+                <div className="size-input-group">
+                  <label htmlFor="windowWidth">Width (px)</label>
+                  <input
+                    type="number"
+                    id="windowWidth"
+                    min="400"
+                    max="3840"
+                    value={settings.windowSize?.width || 1200}
+                    onChange={(e) => {
+                      const width = Math.max(400, Math.min(3840, parseInt(e.target.value) || 1200));
+                      handleInputChange('windowSize', {
+                        ...settings.windowSize,
+                        width,
+                        preset: 'custom'
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="size-input-group">
+                  <label htmlFor="windowHeight">Height (px)</label>
+                  <input
+                    type="number"
+                    id="windowHeight"
+                    min="300"
+                    max="2160"
+                    value={settings.windowSize?.height || 900}
+                    onChange={(e) => {
+                      const height = Math.max(300, Math.min(2160, parseInt(e.target.value) || 900));
+                      handleInputChange('windowSize', {
+                        ...settings.windowSize,
+                        height,
+                        preset: 'custom'
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="window-size-info">
+                <small>
+                  <strong>Current size:</strong> {settings.windowSize?.width || 1200} × {settings.windowSize?.height || 900} pixels
+                  <br />
+                  <strong>Recommended:</strong> Large (1200×900) provides optimal writing space and readability
+                  <br />
+                  <strong>Limits:</strong> Width: 400-3840px, Height: 300-2160px (automatically enforced)
+                </small>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="settings-section">
