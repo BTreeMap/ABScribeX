@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import '../options/Inter-font.css';
+import ABScribeXLogo from '~/assets/ax.svg'; // Ensure the SVG is imported correctly
 
 interface ExtensionStats {
   totalEdits: number;
@@ -35,9 +36,7 @@ function App() {
       <header className="popup-header">
         <div className="logo-section">
           <div className="logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L13.09 7.26L18 4L15.74 9.09L21 10L15.74 10.91L18 16L13.09 16.74L12 22L10.91 16.74L6 16L8.26 10.91L3 10L8.26 9.09L6 4L10.91 7.26L12 2Z" fill="currentColor" />
-            </svg>
+            <img src={ABScribeXLogo} alt="ABScribeX Logo" />
           </div>
           <div className="branding">
             <h1>ABScribeX</h1>
