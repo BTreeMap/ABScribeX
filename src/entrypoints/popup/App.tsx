@@ -27,7 +27,7 @@ function App() {
 
   const openHelp = () => {
     chrome.tabs.create({
-      url: 'https://github.com/your-repo/ABScribeX#readme'
+      url: 'https://github.com/BTreeMap/ABScribeX#readme'
     });
   };
 
