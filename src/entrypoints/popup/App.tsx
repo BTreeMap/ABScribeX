@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import '../options/Inter-font.css';
 
 interface ExtensionStats {
   totalEdits: number;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './Options.css';
+import './Inter-font.css';
 import {
   ExtensionSettings,
   defaultSettings,

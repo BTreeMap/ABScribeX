@@ -1,5 +1,22 @@
 /* Inter Font - Professional Typography */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Local font embedding for Chrome extension */
+@font-face {
+    font-family: 'Inter';
+    src: url('../../assets/Inter-Regular.ttf') format('truetype');
+    font-weight: 300 400 500 600 700;
+    font-style: normal;
+    font-display: swap;
+    font-variation-settings: 'wght' 400;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('../../assets/Inter-Italic.ttf') format('truetype');
+    font-weight: 300 400 500 600 700;
+    font-style: italic;
+    font-display: swap;
+    font-variation-settings: 'wght' 400;
+}
 
 /* Alternative fallback system fonts */
 :root {
