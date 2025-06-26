@@ -21,8 +21,8 @@
 
   /* Surface Colors */
   --surface-primary: #ffffff;
-  --surface-glass: rgba(255, 255, 255, 0.95);
-  --surface-glass-border: rgba(255, 255, 255, 0.2);
+  --surface-glass: rgba(255, 255, 255, 0.1); /* Much more transparent */
+  --surface-glass-border: rgba(255, 255, 255, 0.3); /* More visible border */
 
   /* Text Colors */
   --text-primary: var(--gray-900);
@@ -91,9 +91,9 @@
 /* Header - Glass Effect */
 .popup-header {
   padding: var(--space-xl);
-  background: var(--surface-glass);
+  background: rgba(255, 255, 255, 0.1); /* Much more transparent */
   backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--surface-glass-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* More visible border */
   position: relative;
   z-index: 10;
 }
@@ -107,8 +107,8 @@
 .logo {
   width: 40px;
   height: 40px;
-  background: var(--surface-glass);
-  border: 1px solid var(--surface-glass-border);
+  background: rgba(255, 255, 255, 0.1); /* Use transparent background instead of glass */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* More visible border */
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
@@ -116,6 +116,16 @@
   color: var(--text-inverse);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-xs);
+  overflow: hidden; /* Prevent logo overflow */
+}
+
+/* Fix logo image sizing */
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  max-width: 32px;
+  max-height: 32px;
 }
 
 .branding h1 {
@@ -164,11 +174,11 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-md);
-  background: var(--surface-glass);
+  background: rgba(255, 255, 255, 0.1); /* More transparent */
   backdrop-filter: blur(10px) saturate(180%);
   padding: var(--space-lg);
   border-radius: var(--radius-xl);
-  border: 1px solid var(--surface-glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.3); /* More visible border */
   box-shadow: var(--shadow-xs);
   transition: all var(--transition-base);
 }
@@ -202,12 +212,12 @@
 }
 
 .stat-card {
-  background: var(--surface-glass);
+  background: rgba(255, 255, 255, 0.1); /* More transparent */
   backdrop-filter: blur(10px) saturate(180%);
   padding: var(--space-lg) var(--space-md);
   border-radius: var(--radius-xl);
   text-align: center;
-  border: 1px solid var(--surface-glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.3); /* More visible border */
   box-shadow: var(--shadow-xs);
   transition: all var(--transition-base);
 }
@@ -273,31 +283,31 @@
 }
 
 .action-button.primary {
-  background: var(--surface-glass);
+  background: rgba(255, 255, 255, 0.15); /* More transparent for better contrast */
   backdrop-filter: blur(10px) saturate(180%);
-  color: white;
-  /* Explicit color for visibility */
-  border: 1px solid var(--surface-glass-border);
+  color: white !important; /* Force white text with !important */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* More visible border */
   box-shadow: var(--shadow-xs);
 }
 
 .action-button.primary:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.25); /* Slightly more opaque on hover */
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+  color: white !important; /* Ensure text stays white */
 }
 
 .action-button.secondary {
   background: transparent;
-  color: white;
-  /* Explicit color for visibility */
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white !important; /* Force white text with !important */
+  border: 1px solid rgba(255, 255, 255, 0.5); /* More visible border */
 }
 
 .action-button.secondary:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.6); /* More visible border on hover */
   transform: translateY(-1px);
+  color: white !important; /* Ensure text stays white */
 }
 
 .action-button:active {
@@ -400,4 +410,32 @@
 .popup-container .popup-content,
 .popup-container .popup-footer {
   color: white;
+}
+
+/* High-specificity rules to ensure button text is always visible */
+.popup-container .action-button,
+.popup-container .action-button.primary,
+.popup-container .action-button.secondary {
+  color: white !important;
+}
+
+.popup-container .action-button:hover,
+.popup-container .action-button.primary:hover,
+.popup-container .action-button.secondary:hover {
+  color: white !important;
+}
+
+.popup-container .action-button .button-icon {
+  color: inherit;
+}
+
+/* Ensure button backgrounds have proper contrast */
+.popup-container .action-button.primary {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+.popup-container .action-button.secondary {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
